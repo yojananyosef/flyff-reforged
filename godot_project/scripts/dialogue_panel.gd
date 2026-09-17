@@ -37,6 +37,9 @@ func open(p_npc_id: String) -> void:
 	speaker_label.text = str(npc.get("name", npc_id))
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var audio = get_node_or_null("/root/AudioManager")
+	if audio != null:
+		audio.play_sfx("ui_open")
 	_show_node("start")
 	print("[Dialogue] abierto con %s" % npc_id)
 
@@ -45,6 +48,9 @@ func close() -> void:
 	visible = false
 	npc_id = ""
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	var audio = get_node_or_null("/root/AudioManager")
+	if audio != null:
+		audio.play_sfx("ui_close")
 
 
 func _show_node(node_id: String) -> void:
@@ -88,6 +94,9 @@ func _refresh_accept(game_data: Node) -> void:
 
 
 func _on_option(next_id: String) -> void:
+	var audio = get_node_or_null("/root/AudioManager")
+	if audio != null:
+		audio.play_sfx("ui_click")
 	_show_node(next_id)
 
 

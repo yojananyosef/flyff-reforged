@@ -46,6 +46,9 @@ func accept_quest(quest_id: String) -> bool:
 		return false
 	active[quest_id] = {"count": 0}
 	print("[Quest] aceptada: %s" % quest_id)
+	var audio = get_node_or_null("/root/AudioManager")
+	if audio != null:
+		audio.play_sfx("quest_accept")
 	quest_updated.emit()
 	return true
 
@@ -95,3 +98,7 @@ func _complete(quest_id: String) -> void:
 		for item_id in q.get("rewards", {}).get("items", []):
 			player.add_item(str(item_id), 1)
 	print("[Quest] completada: %s (desbloquea %s)" % [quest_id, str(q.get("unlocks"))])
+	var audio = get_node_or_null("/root/AudioManager")
+	if audio != null:
+		audio.play_sfx("reward")
+		audio.play_sting("sting_quest")

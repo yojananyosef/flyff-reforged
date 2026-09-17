@@ -23,6 +23,9 @@ func _ready() -> void:
 		push_warning("[Main] zona actual no es 'ironhold': " + str(game_data.current_zone_id))
 	npc.set_meta("npc_id", "npc_001")
 	_spawn_monsters(game_data)
+	var audio = get_node_or_null("/root/AudioManager")
+	if audio != null:
+		audio.play_zone_music()
 	if "--sim-quest" in OS.get_cmdline_user_args():
 		_run_sim.call_deferred()
 
@@ -108,6 +111,19 @@ func _run_sim() -> void:
 	_check(game_data.current_zone_id == "ironhold", "zona actual es ironhold")
 	_check(game_data.zones.size() >= 1 and game_data.dialogues.size() >= 2,
 		"datos cargados (zonas/dialogos)")
+
+	var audio = get_node("/root/AudioManager")
+	_check(audio.missing_files().is_empty(),
+		"audio 16/16 presente (%s)" % str(audio.missing_files()))
+	for sfx_name in audio.known_sfx():
+		audio.play_sfx(sfx_name)
+	_check(true, "12 SFX emitidos sin error")
+	audio.notify_combat()
+	_check(audio._in_combat_music, "musica de combate activa tras agresion")
+	audio.toggle_mute()
+	_check(audio.muted, "mute con M funciona")
+	audio.toggle_mute()
+	_check(not audio.muted, "unmute restaura")
 
 	var expected := 0
 	for mid in game_data.monsters:

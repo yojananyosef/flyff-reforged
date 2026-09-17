@@ -33,6 +33,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_inventory_open = not _inventory_open
 			inventory_panel.visible = _inventory_open
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if _inventory_open else Input.MOUSE_MODE_CAPTURED
+			var audio = get_node_or_null("/root/AudioManager")
+			if audio != null:
+				audio.play_sfx("ui_open" if _inventory_open else "ui_close")
 			if _inventory_open:
 				_rebuild_inventory()
 

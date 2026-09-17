@@ -14,6 +14,8 @@ export_presets.cfg
 # Se versionan solo los convertidos y los scripts, no los .o3d/.res originales
 *.o3d
 *.res
+# Audio del cliente copiado por scripts/parsers/setup_audio.py (no versionar)
+godot_project/audio/
 
 # OS / editores
 .DS_Store

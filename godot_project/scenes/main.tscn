@@ -170,7 +170,7 @@ offset_left = 10.0
 offset_top = 120.0
 offset_right = 310.0
 offset_bottom = 162.0
-text = "WASD moverse · Espacio saltar · Clic atacar · E hablar · I inventario · F1 dano"
+text = "WASD moverse · Espacio saltar · Clic atacar · E hablar · I inventario · M mute · F1 dano"
 autowrap_mode = 2
 
 [node name="QuestLabel" type="Label" parent="HUD/Panel"]

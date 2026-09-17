@@ -61,6 +61,10 @@ func take_damage(amount: float) -> void:
 	_refresh_label()
 	if hp <= 0.0:
 		_die()
+	else:
+		var audio = get_node_or_null("/root/AudioManager")
+		if audio != null:
+			audio.play_sfx("monster_hurt")
 
 
 func _die() -> void:
@@ -75,6 +79,11 @@ func _die() -> void:
 			for drop in drops:
 				player.add_item(str(drop), 1)
 	print("[Monster] %s muerto (%.0f EXP)" % [monster_id, exp_value])
+	var audio = get_node_or_null("/root/AudioManager")
+	if audio != null:
+		audio.play_sfx("monster_die")
+		if not drops.is_empty():
+			audio.play_sfx("pickup")
 	remove_from_group("monsters")
 	queue_free()
 

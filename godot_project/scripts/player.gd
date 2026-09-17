@@ -75,6 +75,7 @@ func _physics_process(delta: float) -> void:
 
 func attack() -> void:
 	## Golpea al monstruo mas cercano en alcance.
+	_audio().play_sfx("swing")
 	var best: Node3D = null
 	var best_d := attack_range
 	for m in get_tree().get_nodes_in_group("monsters"):
@@ -84,13 +85,19 @@ func attack() -> void:
 			best = m
 	if best != null and best.has_method("take_damage"):
 		best.take_damage(attack_damage)
+		_audio().play_sfx("hit")
+		_audio().notify_combat()
 		print("[Player] golpe a %s (%.0f dmg)" % [best.get("monster_id"), attack_damage])
 
 
 func take_damage(amount: float) -> void:
 	hp = clampf(hp - amount, 0.0, max_hp)
 	if hp <= 0.0:
+		_audio().play_sting("sting_death")
 		_respawn()
+	else:
+		_audio().play_sfx("player_hurt")
+		_audio().notify_combat()
 
 
 func heal(amount: float) -> void:
@@ -104,6 +111,7 @@ func add_exp(amount: float) -> void:
 		level += 1
 		max_exp *= 1.5
 		hp = max_hp
+		_audio().play_sfx("level_up")
 		print("[Player] nivel %d!" % level)
 
 
@@ -120,3 +128,7 @@ func _respawn() -> void:
 	mp = max_mp
 	velocity = Vector3.ZERO
 	print("[Player] resucitado en el punto de spawn")
+
+
+func _audio():
+	return get_node_or_null("/root/AudioManager")
