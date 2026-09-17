@@ -1,0 +1,12 @@
+[
+  {
+    "id": "ironhold",
+    "display_name": "Ironhold",
+    "original_asset_dir": "WdMadrigal",
+    "description": "Walled barley town on the edge of the fen, first bastion of the Aethermere wardens.",
+    "level_range": [1, 5],
+    "npcs": ["npc_001", "npc_002"],
+    "monsters": ["mon_001", "mon_002", "mon_003", "mon_004", "mon_005"],
+    "spawn_point": [0, 1, 0]
+  }
+]

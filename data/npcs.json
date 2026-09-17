@@ -1,0 +1,18 @@
+[
+  {
+    "id": "npc_001",
+    "name": "Elder Maren Vell",
+    "zone": "ironhold",
+    "role": "quest_giver",
+    "dialogue_id": "dlg_maren_intro",
+    "quests_available": ["quest_101", "quest_102"]
+  },
+  {
+    "id": "npc_002",
+    "name": "Scout Pell Bryn",
+    "zone": "ironhold",
+    "role": "merchant",
+    "dialogue_id": "dlg_pell_intro",
+    "quests_available": []
+  }
+]

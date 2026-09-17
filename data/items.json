@@ -1,0 +1,82 @@
+[
+  {
+    "id": "item_001",
+    "name": "Recruit Blade",
+    "type": "weapon",
+    "level_required": 1,
+    "price": 25,
+    "description": "Short iron sword issued to Ironhold recruits."
+  },
+  {
+    "id": "item_002",
+    "name": "Recruit Tunic",
+    "type": "armor",
+    "level_required": 1,
+    "price": 20,
+    "description": "Padded tunic stitched in the Ironhold barracks."
+  },
+  {
+    "id": "item_003",
+    "name": "Hearthbread",
+    "type": "consumable",
+    "level_required": 1,
+    "price": 4,
+    "description": "Dense rye loaf. Restores a little health on the road."
+  },
+  {
+    "id": "item_004",
+    "name": "Ember Tonic",
+    "type": "consumable",
+    "level_required": 1,
+    "price": 8,
+    "description": "Bitter herbal draught that warms the limbs and restores mana."
+  },
+  {
+    "id": "item_005",
+    "name": "Cinder Pelt",
+    "type": "material",
+    "level_required": 1,
+    "price": 3,
+    "description": "Ash-dusted fur shed by cinder hares."
+  },
+  {
+    "id": "item_006",
+    "name": "Boar Hide",
+    "type": "material",
+    "level_required": 1,
+    "price": 5,
+    "description": "Tough hide of a mossback boar, good for straps."
+  },
+  {
+    "id": "item_007",
+    "name": "Wisp Mote",
+    "type": "material",
+    "level_required": 1,
+    "price": 7,
+    "description": "Faintly glowing speck left behind by a fen wisp."
+  },
+  {
+    "id": "item_008",
+    "name": "Crow Feather",
+    "type": "material",
+    "level_required": 1,
+    "price": 2,
+    "description": "Glossy black feather of a hollow crow."
+  },
+  {
+    "id": "item_009",
+    "name": "Wolf Fang",
+    "type": "material",
+    "level_required": 2,
+    "price": 9,
+    "description": "Curved fang of a rustjaw wolf."
+  },
+  {
+    "id": "item_010",
+    "name": "Ironhold Charter",
+    "type": "quest",
+    "level_required": 1,
+    "price": 0,
+    "description": "Sealed letter proving service to the Ironhold council."
+  }
+]

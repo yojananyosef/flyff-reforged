@@ -1,0 +1,36 @@
+[
+  {
+    "id": "quest_101",
+    "title": "Hares in the Barley",
+    "giver": "npc_001",
+    "requires": null,
+    "target": {
+      "type": "kill",
+      "monster_id": "mon_001",
+      "count": 5
+    },
+    "rewards": {
+      "exp": 40,
+      "items": ["item_003"]
+    },
+    "unlocks": "quest_102",
+    "description": "Cinder hares are trampling the barley terraces. Cull five of them for Elder Maren."
+  },
+  {
+    "id": "quest_102",
+    "title": "Boar Trouble",
+    "giver": "npc_001",
+    "requires": "quest_101",
+    "target": {
+      "type": "kill",
+      "monster_id": "mon_002",
+      "count": 3
+    },
+    "rewards": {
+      "exp": 70,
+      "items": ["item_010"]
+    },
+    "unlocks": null,
+    "description": "With the hares thinned, mossback boars grow bold. Drive off three of them."
+  }
+]

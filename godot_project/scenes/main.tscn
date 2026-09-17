@@ -1,0 +1,145 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/player.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/hud.gd" id="3"]
+
+[sub_resource type="Environment" id="sky_env"]
+background_mode = 1
+background_color = Color(0.05, 0.07, 0.12, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.65, 0.75, 1)
+ambient_light_energy = 0.7
+
+[sub_resource type="StandardMaterial3D" id="ground_mat"]
+albedo_color = Color(0.32, 0.38, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="ground_mesh"]
+material = SubResource("ground_mat")
+size = Vector3(40, 1, 40)
+
+[sub_resource type="BoxShape3D" id="ground_shape"]
+size = Vector3(40, 1, 40)
+
+[sub_resource type="StandardMaterial3D" id="body_mat"]
+albedo_color = Color(0.25, 0.45, 0.85, 1)
+
+[sub_resource type="CapsuleMesh" id="body_mesh"]
+material = SubResource("body_mat")
+radius = 0.4
+height = 1.6
+
+[sub_resource type="CapsuleShape3D" id="body_shape"]
+radius = 0.4
+height = 1.6
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("sky_env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.877583, -0.420547, 0.229848, 0, 0.477159, 0.878817, -0.479426, -0.770754, 0.418446, 0, 8, 2)
+shadow_enabled = true
+
+[node name="Ground" type="StaticBody3D" parent="."]
+position = Vector3(0, -0.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("ground_mesh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="Player" type="CharacterBody3D" parent="."]
+position = Vector3(0, 0.1, 0)
+script = ExtResource("2")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+position = Vector3(0, 0.9, 0)
+shape = SubResource("body_shape")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player"]
+position = Vector3(0, 0.9, 0)
+mesh = SubResource("body_mesh")
+
+[node name="CamPivot" type="Node3D" parent="Player"]
+position = Vector3(0, 1.4, 0)
+
+[node name="SpringArm3D" type="SpringArm3D" parent="Player/CamPivot"]
+spring_length = 5.0
+
+[node name="Camera3D" type="Camera3D" parent="Player/CamPivot/SpringArm3D"]
+current = true
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("3")
+
+[node name="Panel" type="Control" parent="HUD"]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 330.0
+offset_bottom = 200.0
+
+[node name="ZoneLabel" type="Label" parent="HUD/Panel"]
+offset_left = 10.0
+offset_top = 8.0
+offset_right = 310.0
+offset_bottom = 30.0
+text = "Ironhold"
+
+[node name="HPBar" type="ProgressBar" parent="HUD/Panel"]
+offset_left = 10.0
+offset_top = 36.0
+offset_right = 210.0
+offset_bottom = 58.0
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="HPLabel" type="Label" parent="HUD/Panel"]
+offset_left = 218.0
+offset_top = 36.0
+offset_right = 310.0
+offset_bottom = 58.0
+text = "100 / 100"
+
+[node name="MPBar" type="ProgressBar" parent="HUD/Panel"]
+offset_left = 10.0
+offset_top = 64.0
+offset_right = 210.0
+offset_bottom = 86.0
+max_value = 50.0
+value = 50.0
+show_percentage = false
+
+[node name="MPLabel" type="Label" parent="HUD/Panel"]
+offset_left = 218.0
+offset_top = 64.0
+offset_right = 310.0
+offset_bottom = 86.0
+text = "50 / 50"
+
+[node name="EXPBar" type="ProgressBar" parent="HUD/Panel"]
+offset_left = 10.0
+offset_top = 92.0
+offset_right = 210.0
+offset_bottom = 114.0
+max_value = 100.0
+show_percentage = false
+
+[node name="EXPLabel" type="Label" parent="HUD/Panel"]
+offset_left = 218.0
+offset_top = 92.0
+offset_right = 310.0
+offset_bottom = 114.0
+text = "0 / 100"
+
+[node name="Hint" type="Label" parent="HUD/Panel"]
+offset_left = 10.0
+offset_top = 120.0
+offset_right = 310.0
+offset_bottom = 165.0
+text = "WASD moverse · Espacio saltar · F1 dano de prueba"
+autowrap_mode = 2

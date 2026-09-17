@@ -1,0 +1,57 @@
+[
+  {
+    "id": "mon_001",
+    "name": "Cinder Hare",
+    "zone": "ironhold",
+    "level": 1,
+    "hp": 30,
+    "attack": 4,
+    "defense": 0,
+    "exp": 8,
+    "drops": ["item_005"]
+  },
+  {
+    "id": "mon_002",
+    "name": "Mossback Boar",
+    "zone": "ironhold",
+    "level": 2,
+    "hp": 55,
+    "attack": 7,
+    "defense": 2,
+    "exp": 14,
+    "drops": ["item_006"]
+  },
+  {
+    "id": "mon_003",
+    "name": "Fen Wisp",
+    "zone": "ironhold",
+    "level": 2,
+    "hp": 40,
+    "attack": 8,
+    "defense": 0,
+    "exp": 16,
+    "drops": ["item_007"]
+  },
+  {
+    "id": "mon_004",
+    "name": "Hollow Crow",
+    "zone": "ironhold",
+    "level": 1,
+    "hp": 25,
+    "attack": 5,
+    "defense": 0,
+    "exp": 7,
+    "drops": ["item_008"]
+  },
+  {
+    "id": "mon_005",
+    "name": "Rustjaw Wolf",
+    "zone": "ironhold",
+    "level": 3,
+    "hp": 80,
+    "attack": 11,
+    "defense": 3,
+    "exp": 24,
+    "drops": ["item_009"]
+  }
+]

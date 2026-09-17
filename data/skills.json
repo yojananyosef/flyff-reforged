@@ -1,0 +1,29 @@
+[
+  {
+    "id": "skill_001",
+    "name": "Ember Slash",
+    "class": "warden",
+    "level_required": 1,
+    "mp_cost": 5,
+    "power": 12,
+    "description": "A sweeping cut wreathed in sparks. The recruit's first technique."
+  },
+  {
+    "id": "skill_002",
+    "name": "Bulwark Stance",
+    "class": "warden",
+    "level_required": 2,
+    "mp_cost": 6,
+    "power": 0,
+    "description": "Plant your feet and raise your guard, halving incoming damage briefly."
+  },
+  {
+    "id": "skill_003",
+    "name": "Field Bandage",
+    "class": "warden",
+    "level_required": 3,
+    "mp_cost": 8,
+    "power": 0,
+    "description": "Bind wounds quickly to restore a portion of health."
+  }
+]
