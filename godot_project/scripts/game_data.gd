@@ -5,6 +5,9 @@ extends Node
 ## junto a `data/`) con repliegue a `res://data/` (datos copiados dentro
 ## del proyecto, p. ej. al exportar).
 
+const DATA_FILES := ["zones.json", "dialogues.json", "items.json",
+	"monsters.json", "npcs.json", "quests.json", "skills.json"]
+
 const FALLBACK_ZONE := {
 	"id": "ironhold",
 	"display_name": "Ironhold",
@@ -18,12 +21,22 @@ const FALLBACK_ZONE := {
 
 var zones: Dictionary = {}
 var dialogues: Dictionary = {}
+var items: Dictionary = {}
+var monsters: Dictionary = {}
+var npcs: Dictionary = {}
+var quests: Dictionary = {}
+var skills: Dictionary = {}
 var current_zone_id: String = "ironhold"
 
 
 func _ready() -> void:
 	zones = _load_dict("zones.json")
 	dialogues = _load_dict("dialogues.json")
+	items = _load_dict("items.json")
+	monsters = _load_dict("monsters.json")
+	npcs = _load_dict("npcs.json")
+	quests = _load_dict("quests.json")
+	skills = _load_dict("skills.json")
 	if not zones.has(current_zone_id):
 		if zones.is_empty():
 			zones[current_zone_id] = FALLBACK_ZONE
@@ -40,8 +53,17 @@ func get_zone_display_name() -> String:
 	return str(get_current_zone().get("display_name", current_zone_id))
 
 
+func get_zone_spawn() -> Vector3:
+	var sp: Array = get_current_zone().get("spawn_point", [0, 1, 0])
+	return Vector3(float(sp[0]), float(sp[1]), float(sp[2]))
+
+
 func get_dialogue(dialogue_id: String) -> Dictionary:
 	return dialogues.get(dialogue_id, {})
+
+
+func get_item_name(item_id: String) -> String:
+	return str(items.get(item_id, {}).get("name", item_id))
 
 
 func _candidate_paths(filename: String) -> Array[String]:

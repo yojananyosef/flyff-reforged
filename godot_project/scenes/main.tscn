@@ -1,8 +1,9 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/player.gd" id="2"]
 [ext_resource type="Script" path="res://scripts/hud.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/dialogue_panel.gd" id="4"]
 
 [sub_resource type="Environment" id="sky_env"]
 background_mode = 1
@@ -32,6 +33,17 @@ height = 1.6
 [sub_resource type="CapsuleShape3D" id="body_shape"]
 radius = 0.4
 height = 1.6
+
+[sub_resource type="StandardMaterial3D" id="npc_mat"]
+albedo_color = Color(0.3, 0.7, 0.35, 1)
+
+[sub_resource type="CapsuleMesh" id="npc_mesh"]
+material = SubResource("npc_mat")
+radius = 0.4
+height = 1.6
+
+[sub_resource type="BoxShape3D" id="npc_shape"]
+size = Vector3(1, 2, 1)
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1")
@@ -73,6 +85,23 @@ spring_length = 5.0
 [node name="Camera3D" type="Camera3D" parent="Player/CamPivot/SpringArm3D"]
 current = true
 
+[node name="NPC" type="StaticBody3D" parent="."]
+position = Vector3(4, 0, -2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NPC"]
+position = Vector3(0, 1, 0)
+shape = SubResource("npc_shape")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="NPC"]
+position = Vector3(0, 0.9, 0)
+mesh = SubResource("npc_mesh")
+
+[node name="NameLabel" type="Label3D" parent="NPC"]
+position = Vector3(0, 2.3, 0)
+billboard = 1
+font_size = 48
+text = "Elder Maren Vell"
+
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("3")
 
@@ -80,7 +109,7 @@ script = ExtResource("3")
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 330.0
-offset_bottom = 200.0
+offset_bottom = 214.0
 
 [node name="ZoneLabel" type="Label" parent="HUD/Panel"]
 offset_left = 10.0
@@ -140,6 +169,92 @@ text = "0 / 100"
 offset_left = 10.0
 offset_top = 120.0
 offset_right = 310.0
-offset_bottom = 165.0
-text = "WASD moverse · Espacio saltar · F1 dano de prueba"
+offset_bottom = 162.0
+text = "WASD moverse · Espacio saltar · Clic atacar · E hablar · I inventario · F1 dano"
 autowrap_mode = 2
+
+[node name="QuestLabel" type="Label" parent="HUD/Panel"]
+offset_left = 10.0
+offset_top = 166.0
+offset_right = 310.0
+offset_bottom = 206.0
+text = "Sin misión activa"
+autowrap_mode = 2
+
+[node name="InventoryPanel" type="Control" parent="HUD"]
+visible = false
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -330.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 300.0
+
+[node name="Title" type="Label" parent="HUD/InventoryPanel"]
+offset_left = 10.0
+offset_top = 6.0
+offset_right = 310.0
+offset_bottom = 28.0
+text = "Inventario (I)"
+
+[node name="InventoryList" type="ItemList" parent="HUD/InventoryPanel"]
+offset_left = 10.0
+offset_top = 32.0
+offset_right = 310.0
+offset_bottom = 280.0
+
+[node name="DialogueLayer" type="CanvasLayer" parent="."]
+visible = false
+layer = 10
+script = ExtResource("4")
+
+[node name="Panel" type="Control" parent="DialogueLayer"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -140.0
+offset_right = 260.0
+offset_bottom = 140.0
+
+[node name="Bg" type="ColorRect" parent="DialogueLayer/Panel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.05, 0.08, 0.95)
+
+[node name="SpeakerLabel" type="Label" parent="DialogueLayer/Panel"]
+offset_left = 16.0
+offset_top = 10.0
+offset_right = 504.0
+offset_bottom = 34.0
+text = "NPC"
+
+[node name="TextLabel" type="Label" parent="DialogueLayer/Panel"]
+offset_left = 16.0
+offset_top = 40.0
+offset_right = 504.0
+offset_bottom = 112.0
+text = "..."
+autowrap_mode = 2
+
+[node name="OptionsBox" type="VBoxContainer" parent="DialogueLayer/Panel"]
+offset_left = 16.0
+offset_top = 118.0
+offset_right = 504.0
+offset_bottom = 208.0
+
+[node name="AcceptButton" type="Button" parent="DialogueLayer/Panel"]
+visible = false
+offset_left = 16.0
+offset_top = 214.0
+offset_right = 250.0
+offset_bottom = 248.0
+text = "Aceptar misión"
+
+[node name="CloseButton" type="Button" parent="DialogueLayer/Panel"]
+offset_left = 266.0
+offset_top = 214.0
+offset_right = 504.0
+offset_bottom = 248.0
+text = "Cerrar (E)"

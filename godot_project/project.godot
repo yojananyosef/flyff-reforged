@@ -13,6 +13,7 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 [autoload]
 
 GameData="*res://scripts/game_data.gd"
+QuestManager="*res://scripts/quest_manager.gd"
 
 [input]
 
