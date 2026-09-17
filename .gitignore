@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Godot
+.godot/
+*.translation
+export_presets.cfg
+
+# Assets originales FlyFF (cada dev los extrae de su cliente)
+# Se versionan solo los convertidos y los scripts, no los .o3d/.res originales
+*.o3d
+*.res
+
+# OS / editores
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/
+.idea/
+
+# OpenSpec temporales
+openspec/changes/**/scratch/
