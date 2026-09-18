@@ -33,3 +33,7 @@ Thumbs.db
 
 # OpenSpec temporales
 openspec/changes/**/scratch/
+
+# artefactos de prueba locales
+shots/
+.playwright-mcp/
