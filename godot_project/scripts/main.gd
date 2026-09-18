@@ -521,7 +521,12 @@ func _run_sim() -> void:
 	# --- movimiento (regresion WASD) ---
 	var m0: Vector3 = player.global_position
 	Input.action_press("move_forward")
-	for i in 60:
+	for i in 30:
+		await get_tree().physics_frame
+	var papw = player.get("_anim")
+	if papw != null:
+		_check(papw.current_animation == "walk", "walk al desplazarse")
+	for i in 30:
 		await get_tree().physics_frame
 	Input.action_release("move_forward")
 	var moved: float = m0.distance_to(player.global_position)
@@ -555,6 +560,14 @@ func _run_sim() -> void:
 				player.global_position = hare2.global_position + Vector3(1.0, 0.0, 0.0)
 			await get_tree().physics_frame
 		_check(bool(hare2.get("_attacked_anim")), "liebre reproduce atk al golpear")
+
+	# --- avatar del jugador (aethermere-player-avatar) ---
+	if ResourceLoader.exists("res://models/PlayerMvr.glb"):
+		_check(player.get_node_or_null("Model") != null, "avatar montado")
+		var pap = player.get("_anim")
+		_check(pap != null and pap.is_playing(), "locomocion del avatar activa")
+	else:
+		_check(player.get_node_or_null("Model") == null, "repliegue a capsula sin modelo")
 
 	# --- agro + target (aethermere-aggro-target) ---
 	var wisp: Node3D = null
@@ -708,6 +721,8 @@ func _run_sim() -> void:
 		_check(player.attack(brute), "primer basico sale")
 		_check(not player.attack(brute), "segundo inmediato se rechaza por cooldown")
 		_check(is_equal_approx(brute.hp, c0 - 5.0), "solo un impacto (%.0f)" % brute.hp)
+		if player.get("_anim") != null:
+			_check(bool(player.get("_attacked_anim")), "avatar reproduce atk1 al golpear")
 	else:
 		_check(false, "lobo vivo para auto-ataque")
 

@@ -8,6 +8,8 @@ Evidencia (ver design aethermere-skin):
 
 Uso:
     python3 o3d_to_skinglb.py --o3d M.o3d --chr M.chr --anis "M_*.ani" --output M.glb
+    python3 o3d_to_skinglb.py --o3d A.o3d --o3d B.o3d --chr M.chr --anis "M_*.ani" --output M.glb
+        (varias piezas con el mismo esqueleto, p. ej. cuerpo del jugador)
 """
 
 from __future__ import annotations
@@ -57,8 +59,10 @@ class GlbWriter:
         return idx
 
 
-def build(o3d_path: str, chr_path: str, ani_paths: list[str]) -> bytes:
-    o = parse_o3d(o3d_path)
+def build(o3d_path: str | list[str], chr_path: str, ani_paths: list[str]) -> bytes:
+    o3d_paths = [o3d_path] if isinstance(o3d_path, str) else list(o3d_path)
+    parsed = [parse_o3d(p) for p in o3d_paths]
+    multi = len(parsed) > 1
     c = parse_chr(chr_path)
     bones = c["bones"]
     n_bone = len(bones)
@@ -102,56 +106,58 @@ def build(o3d_path: str, chr_path: str, ani_paths: list[str]) -> bytes:
         ub_cache[key] = idx
         return idx
 
-    groups = o["groups"][:1]  # grupo LOD 0
-    for gi, group in enumerate(groups):
-        for ob in group["objects"]:
-            n = ob["counts"]["vb"]
-            if n == 0 or not ob["indices"]:
-                continue
-            pos = struct.pack(f"<{len(ob['positions'])}f", *ob["positions"])
-            nor = struct.pack(f"<{len(ob['normals'])}f", *ob["normals"])
-            uv = struct.pack(f"<{len(ob['uvs'])}f", *ob["uvs"])
-            idx_max = max(ob["indices"])
-            fmt = "<H" if idx_max < 65536 else "<I"
-            idx = struct.pack(f"{fmt[0]}{len(ob['indices'])}{fmt[1]}", *ob["indices"])
-            ub = ob["use_bones"]
-            jn, wt = [], []
-            for i in range(n):
-                j0 = ob["joints"][i * 4] // 3
-                j1 = ob["joints"][i * 4 + 1] // 3
-                w0, w1 = ob["weights"][i * 4], ob["weights"][i * 4 + 1]
-                b0 = ub[j0] if 0 <= j0 < len(ub) else 0
-                b1 = ub[j1] if 0 <= j1 < len(ub) else 0
-                s = w0 + w1
-                if s <= 0:
-                    w0, w1, s = 1.0, 0.0, 1.0
-                jn += [b0, b1, 0, 0]
-                wt += [w0 / s, w1 / s, 0.0, 0.0]
-            jdat = struct.pack(f"<{len(jn)}H", *[int(x) & 0xFFFF for x in jn])
-            wdat = struct.pack(f"<{len(wt)}f", *wt)
-            ia = w.add_accessor(w.add_view(idx), 5123 if fmt == "<H" else 5125,
-                                len(ob["indices"]), "SCALAR")
-            pa = w.add_accessor(
-                w.add_view(pos), 5126, n, "VEC3",
-                [min(ob["positions"][k::3]) for k in range(3)],
-                [max(ob["positions"][k::3]) for k in range(3)])
-            na = w.add_accessor(w.add_view(nor), 5126, n, "VEC3")
-            ta = w.add_accessor(w.add_view(uv), 5126, n, "VEC2")
-            ja = w.add_accessor(w.add_view(jdat), 5123, n, "VEC4")
-            wa = w.add_accessor(w.add_view(wdat), 5126, n, "VEC4")
-            tex = ob["materials"][0]["texture"] if ob["materials"] else ""
-            mat = material(tex, f"obj{ob['id']:02d}_{ob['type']}")
-            meshes.append({"name": f"g{gi}_obj{ob['id']:02d}_{ob['type']}",
-                           "primitives": [{"attributes": {
-                               "POSITION": pa, "NORMAL": na, "TEXCOORD_0": ta,
-                               "JOINTS_0": ja, "WEIGHTS_0": wa},
-                               "indices": ia, "material": mat, "mode": 4}]})
-            mesh_nodes.append(len(nodes))
-            nodes.append({"name": f"g{gi}_obj{ob['id']:02d}", "mesh": len(meshes) - 1,
-                          "skin": 0})
+    groups_list = [o["groups"][:1] for o in parsed]  # grupo LOD 0
+    for pi, groups in enumerate(groups_list):
+        prefix = f"p{pi}_" if multi else ""
+        for gi, group in enumerate(groups):
+            for ob in group["objects"]:
+                n = ob["counts"]["vb"]
+                if n == 0 or not ob["indices"]:
+                    continue
+                pos = struct.pack(f"<{len(ob['positions'])}f", *ob["positions"])
+                nor = struct.pack(f"<{len(ob['normals'])}f", *ob["normals"])
+                uv = struct.pack(f"<{len(ob['uvs'])}f", *ob["uvs"])
+                idx_max = max(ob["indices"])
+                fmt = "<H" if idx_max < 65536 else "<I"
+                idx = struct.pack(f"{fmt[0]}{len(ob['indices'])}{fmt[1]}", *ob["indices"])
+                ub = ob["use_bones"]
+                jn, wt = [], []
+                for i in range(n):
+                    j0 = ob["joints"][i * 4] // 3
+                    j1 = ob["joints"][i * 4 + 1] // 3
+                    w0, w1 = ob["weights"][i * 4], ob["weights"][i * 4 + 1]
+                    b0 = ub[j0] if 0 <= j0 < len(ub) else 0
+                    b1 = ub[j1] if 0 <= j1 < len(ub) else 0
+                    s = w0 + w1
+                    if s <= 0:
+                        w0, w1, s = 1.0, 0.0, 1.0
+                    jn += [b0, b1, 0, 0]
+                    wt += [w0 / s, w1 / s, 0.0, 0.0]
+                jdat = struct.pack(f"<{len(jn)}H", *[int(x) & 0xFFFF for x in jn])
+                wdat = struct.pack(f"<{len(wt)}f", *wt)
+                ia = w.add_accessor(w.add_view(idx), 5123 if fmt == "<H" else 5125,
+                                    len(ob["indices"]), "SCALAR")
+                pa = w.add_accessor(
+                    w.add_view(pos), 5126, n, "VEC3",
+                    [min(ob["positions"][k::3]) for k in range(3)],
+                    [max(ob["positions"][k::3]) for k in range(3)])
+                na = w.add_accessor(w.add_view(nor), 5126, n, "VEC3")
+                ta = w.add_accessor(w.add_view(uv), 5126, n, "VEC2")
+                ja = w.add_accessor(w.add_view(jdat), 5123, n, "VEC4")
+                wa = w.add_accessor(w.add_view(wdat), 5126, n, "VEC4")
+                tex = ob["materials"][0]["texture"] if ob["materials"] else ""
+                mat = material(tex, f"obj{ob['id']:02d}_{ob['type']}")
+                meshes.append({"name": f"{prefix}g{gi}_obj{ob['id']:02d}_{ob['type']}",
+                               "primitives": [{"attributes": {
+                                   "POSITION": pa, "NORMAL": na, "TEXCOORD_0": ta,
+                                   "JOINTS_0": ja, "WEIGHTS_0": wa},
+                                   "indices": ia, "material": mat, "mode": 4}]})
+                mesh_nodes.append(len(nodes))
+                nodes.append({"name": f"{prefix}g{gi}_obj{ob['id']:02d}", "mesh": len(meshes) - 1,
+                              "skin": 0})
 
     animations: list[dict] = []
-    base = os.path.splitext(os.path.basename(o3d_path))[0].lower()
+    base = os.path.splitext(os.path.basename(chr_path))[0].lower()
     for ap in sorted(ani_paths):
         stem = os.path.splitext(os.path.basename(ap))[0]
         aname = stem[len(base) + 1:] if stem.lower().startswith(base + "_") else stem
@@ -209,7 +215,8 @@ def build(o3d_path: str, chr_path: str, ani_paths: list[str]) -> bytes:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Convierte personaje FlyFF a .glb animado")
-    ap.add_argument("--o3d", required=True)
+    ap.add_argument("--o3d", required=True, action="append",
+                      help="Modelo .o3d (repetible: varias piezas, mismo esqueleto)")
     ap.add_argument("--chr", required=True)
     ap.add_argument("--anis", required=True, help="Patron glob de .ani")
     ap.add_argument("--output", required=True)
@@ -225,7 +232,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     with open(args.output, "wb") as f:
         f.write(glb)
-    print(f"OK {args.o3d} + {len(anis)} anis -> {args.output} ({len(glb)} bytes)")
+    print(f"OK {'+'.join(args.o3d)} + {len(anis)} anis -> {args.output} ({len(glb)} bytes)")
     return 0
 
 

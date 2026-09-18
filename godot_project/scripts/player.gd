@@ -49,6 +49,14 @@ var _move_marker: MeshInstance3D = null
 var _swing_tween: Tween = null
 var _rmb_held := false  # freelook: cámara solo mientras se mantiene RMB
 
+## Avatar FlyFF (aethermere-player-avatar): modelo montado si existe
+## `models/PlayerMvr.glb`; si no, cápsula azul + punch de escala.
+var _model: Node3D = null
+var _anim: AnimationPlayer = null
+var _attacking := false
+var _attacked_anim := false  # gancho de sim: true si reprodujo atk1
+var _moving := false
+
 ## Gracia al aparecer: 6 s sin agro ni daño; atacar la rompe (huir no).
 const PROTECT_MAX := 6.0
 var protect_t := 0.0
@@ -80,6 +88,71 @@ func _ready() -> void:
 	ring.visible = false
 	get_parent().add_child.call_deferred(ring)
 	_move_marker = ring
+	_mount_model()
+
+
+func _mount_model() -> void:
+	## Instancia PlayerMvr.glb si existe (setup_player_model.py); si no,
+	## queda la cápsula azul (espejo de monster.gd).
+	var path := "res://models/PlayerMvr.glb"
+	# ResourceLoader (no FileAccess): en exportados el .glb va remapeado.
+	if not ResourceLoader.exists(path):
+		return
+	var packed = load(path)
+	if not (packed is PackedScene):
+		return
+	_model = (packed as PackedScene).instantiate() as Node3D
+	_model.name = "Model"
+	add_child(_model)
+	body_mesh.visible = false
+	_anim = _find_anim(self)
+	_play_locomotion()
+
+
+func _find_anim(n: Node) -> AnimationPlayer:
+	if n is AnimationPlayer:
+		return n
+	for c in n.get_children():
+		var r := _find_anim(c)
+		if r != null:
+			return r
+	return null
+
+
+func _play_anim(candidates: Array, loop: bool) -> bool:
+	if _anim == null:
+		return false
+	for anim_name in candidates:
+		if _anim.has_animation(str(anim_name)):
+			var a := _anim.get_animation(str(anim_name))
+			a.loop_mode = Animation.LOOP_LINEAR if loop else Animation.LOOP_NONE
+			_anim.play(str(anim_name))
+			return true
+	return false
+
+
+func _play_locomotion() -> void:
+	## walk en marcha, stand en reposo (el .glb trae ambos + atk1).
+	if _moving:
+		if _play_anim(["walk", "Walk"], true):
+			return
+	_play_anim(["stand", "Stand", "idle1", "Idle1", "idle", "Default"], true)
+
+
+func _try_attack_anim() -> void:
+	## Un atk1 por golpe; al terminar vuelve a la locomoción.
+	if _attacking or _anim == null:
+		return
+	if not _play_anim(["atk1", "Atk1", "atk2", "att1"], false):
+		return
+	_attacking = true
+	_attacked_anim = true
+	var frames := 0
+	while _anim.is_playing() and frames < 300:
+		await get_tree().process_frame
+		frames += 1
+	_attacking = false
+	_play_locomotion()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -175,7 +248,17 @@ func _physics_process(delta: float) -> void:
 		# Gira solo la malla visible: el cuerpo (CharacterBody3D) no rota
 		# porque CamPivot/Camera cuelgan de el y la camara orbitaria sola
 		# al pulsar A/D (bug: parecia que se movia la camara y no el pj).
-		body_mesh.rotation.y = lerp_angle(body_mesh.rotation.y, atan2(dir.x, dir.z) - rotation.y, 10.0 * delta)
+		var yaw := atan2(dir.x, dir.z) - rotation.y
+		if _model != null:
+			_model.rotation.y = lerp_angle(_model.rotation.y, yaw, 10.0 * delta)
+		if body_mesh.visible:
+			body_mesh.rotation.y = lerp_angle(body_mesh.rotation.y, yaw, 10.0 * delta)
+		if not _moving:
+			_moving = true
+			_play_locomotion()
+	elif _moving:
+		_moving = false
+		_play_locomotion()
 
 	velocity.x = dir.x * speed
 	velocity.z = dir.z * speed
@@ -210,7 +293,10 @@ func attack(only: Node3D = null) -> bool:
 		return false
 	if victim.has_method("take_damage"):
 		basic_cd = BASIC_CD_MAX
-		_swing_fx()
+		if _anim != null:
+			_try_attack_anim()
+		else:
+			_swing_fx()
 		var dmg := phys_damage(attack_stat(), 0.0, victim.get("defense"))
 		victim.take_damage(dmg, self)
 		_audio().play_sfx("hit")
@@ -505,6 +591,9 @@ func _respawn() -> void:
 	_hide_marker()
 	if body_mesh != null:
 		body_mesh.scale = Vector3.ONE
+	_moving = false
+	_attacking = false
+	_play_locomotion()
 	print("[Player] resucitado en el punto de spawn")
 
 
@@ -568,6 +657,10 @@ func cast_skill(skill_id: String) -> bool:
 		var dmg := phys_damage(attack_stat(), float(def.get("power", 0)) + EMBER_POWER_BONUS,
 			foe.get("defense"))
 		foe.take_damage(dmg, self)
+		if _anim != null:
+			_try_attack_anim()
+		else:
+			_swing_fx()
 		_audio().play_sfx("swing")
 		_audio().play_sfx("hit")
 		_audio().notify_combat()
