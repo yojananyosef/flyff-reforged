@@ -153,7 +153,9 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	_touch_cooldown -= delta
-	if player != null and _touch_cooldown <= 0.0:
+	var guarded := player != null and player.is_in_group("player") \
+		and float(player.get("protect_t")) > 0.0
+	if player != null and not guarded and _touch_cooldown <= 0.0:
 		if global_position.distance_to(player.global_position) < 1.4:
 			_touch_cooldown = 1.0
 			aggro_target = player
@@ -170,6 +172,12 @@ func _physics_process(delta: float) -> void:
 func _update_aggro(player: Node3D) -> void:
 	if _dead:
 		aggro_target = null
+		return
+	if player != null and player.is_in_group("player") \
+			and float(player.get("protect_t")) > 0.0:
+		if aggro_target != null:
+			aggro_target = null
+			_pick_direction()
 		return
 	if aggro_target != null:
 		if not is_instance_valid(aggro_target) \

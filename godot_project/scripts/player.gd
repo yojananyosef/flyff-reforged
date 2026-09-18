@@ -48,6 +48,10 @@ var move_dest := Vector3.ZERO
 var _move_marker: MeshInstance3D = null
 var _swing_tween: Tween = null
 
+## Gracia al aparecer: 6 s sin agro ni daño; atacar la rompe (huir no).
+const PROTECT_MAX := 6.0
+var protect_t := 0.0
+
 @onready var cam_pivot: Node3D = $CamPivot
 @onready var spring: SpringArm3D = $CamPivot/SpringArm3D
 @onready var body_mesh: MeshInstance3D = $MeshInstance3D
@@ -61,6 +65,7 @@ static func phys_damage(atk: float, power: float, defense: float) -> float:
 func _ready() -> void:
 	add_to_group("player")
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	protect_t = PROTECT_MAX
 	var ring := MeshInstance3D.new()
 	ring.name = "MoveMarker"
 	var torus := TorusMesh.new()
@@ -84,8 +89,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
-			if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-				var hit := _click_hit()
+			if _can_world_click():
+				var hit := _click_hit(Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)
 				var picked: Node3D = hit.get("monster")
 				if mb.double_click and picked != null:
 					target = picked
@@ -122,6 +127,7 @@ func _physics_process(delta: float) -> void:
 		cooldown_left[sid] = maxf(0.0, float(cooldown_left[sid]) - delta)
 	use_cooldown = maxf(0.0, use_cooldown - delta)
 	basic_cd = maxf(0.0, basic_cd - delta)
+	protect_t = maxf(0.0, protect_t - delta)
 	if bulwark_time > 0.0:
 		bulwark_time -= delta
 		if bulwark_time <= 0.0:
@@ -181,6 +187,7 @@ func attack(only: Node3D = null) -> bool:
 	## Propaga atacante para el agro.
 	if basic_cd > 0.0:
 		return false
+	protect_t = 0.0
 	_audio().play_sfx("swing")
 	var victim: Node3D = null
 	if only != null:
@@ -230,16 +237,37 @@ func _target_in_range(max_range: float) -> Node3D:
 	return target
 
 
-func _click_hit() -> Dictionary:
-	## Un solo rayo central por clic: devuelve `monster` (grupo monsters,
-	## con tolerancia de 140 px) y/o `ground` (punto de suelo válido).
+func _can_world_click() -> bool:
+	## Con pointer-lock siempre. Sin él (petición denegada), también vale si
+	## no hay UI abierta (los Controles consumen sus clics antes de llegar
+	## aquí, así que un clic huérfano es del mundo).
+	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		return true
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud != null:
+		if bool(hud.get("_inventory_open")):
+			return false
+		if hud.is_shop_open():
+			return false
+	var dlg = get_parent().get_node_or_null("DialogueLayer")
+	if dlg != null and dlg.is_open():
+		return false
+	return true
+
+
+func _click_hit(use_center: bool) -> Dictionary:
+	## Rayo de selección: centro con pointer-lock (la posición del evento no
+	## es fiable), posición del clic con ratón libre.
 	var out := {"monster": null, "ground": null}
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
 		return out
 	var center := get_viewport().get_visible_rect().size / 2.0
-	var origin := cam.project_ray_origin(center)
-	var end := origin + cam.project_ray_normal(center) * 100.0
+	var point: Vector2 = center
+	if not use_center:
+		point = get_viewport().get_mouse_position()
+	var origin := cam.project_ray_origin(point)
+	var end := origin + cam.project_ray_normal(point) * 100.0
 	var query := PhysicsRayQueryParameters3D.create(origin, end)
 	query.exclude = [get_rid()]
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
@@ -253,7 +281,7 @@ func _click_hit() -> Dictionary:
 		if n.y > 0.5 and absf(p.x) < 19.0 and absf(p.z) < 19.0:
 			out["ground"] = p
 	if out["monster"] == null:
-		out["monster"] = _near_crosshair(cam, center)
+		out["monster"] = _near_crosshair(cam, point)
 	return out
 
 
@@ -300,7 +328,9 @@ func take_damage(amount: float) -> void:
 
 
 func take_mob_damage(mob_attack: float) -> void:
-	## Dano de monstruo con formula + Bulwark.
+	## Dano de monstruo con formula + Bulwark. La gracia lo ignora.
+	if protect_t > 0.0:
+		return
 	var dmg := phys_damage(mob_attack, 0.0, defense_stat())
 	if bulwark_time > 0.0:
 		dmg *= 0.5
@@ -466,6 +496,7 @@ func _respawn() -> void:
 	auto_attack = false
 	has_dest = false
 	basic_cd = 0.0
+	protect_t = PROTECT_MAX
 	_hide_marker()
 	if body_mesh != null:
 		body_mesh.scale = Vector3.ONE
@@ -519,6 +550,7 @@ func cast_skill(skill_id: String) -> bool:
 		return false
 	if skill_state(skill_id)[0] != "ready":
 		return false
+	protect_t = 0.0
 	var cost := float(def.get("mp_cost", 0))
 	if skill_id == "skill_001":
 		var foe: Node3D = _target_in_range(float(SKILL_TIMES["skill_001"]["range"]))

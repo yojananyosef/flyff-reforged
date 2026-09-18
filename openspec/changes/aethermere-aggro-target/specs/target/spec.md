@@ -7,10 +7,12 @@ de golpear siempre "al más cercano" a ciegas.
 
 ### Requirement: Fijar objetivo con clic
 
-Con el ratón capturado, el clic SHALL lanzar un rayo desde el centro de la
-pantalla (punto de mira) hasta 100 m; si impacta un monstruo, SHALL fijarlo
-como objetivo. Si además está en rango de ataque, SHALL golpearlo; si no,
-solo lo fija y avisa en consola. Clic sin impacto conserva el objetivo y
+Con el ratón capturado, el clic SHALL lanzar un rayo desde el centro de
+la pantalla (punto de mira) hasta 100 m; con el ratón libre (sin
+pointer-lock) SHALL usar la posición del cursor. Si impacta un monstruo,
+SHALL fijarlo como objetivo. Los clics con inventario/tienda/diálogo
+abiertos son de la UI y no llegan al mundo. Si además está en rango de
+ataque, SHALL golpearlo; si no, solo lo fija y avisa en consola. Clic sin impacto conserva el objetivo y
 aplica el ataque clásico al más cercano.
 
 #### Scenario: Fijar y golpear

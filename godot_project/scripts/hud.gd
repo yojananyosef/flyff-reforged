@@ -11,6 +11,8 @@ var _debug_on := false
 var _debug_label: Label
 var _crosshair: Label
 var _target_label: Label
+var _protect_label: Label
+var _build_label: Label
 
 const SHOP_STOCK := ["item_003", "item_004", "item_001", "item_002"]
 var shop_open := false
@@ -93,6 +95,37 @@ func _ready() -> void:
 	_target_label.offset_bottom = -68.0
 	_target_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_target_label)
+	_protect_label = Label.new()
+	_protect_label.name = "ProtectLabel"
+	_protect_label.text = ""
+	_protect_label.add_theme_font_size_override("font_size", 20)
+	_protect_label.anchor_left = 0.5
+	_protect_label.anchor_right = 0.5
+	_protect_label.anchor_top = 0.5
+	_protect_label.anchor_bottom = 0.5
+	_protect_label.offset_left = -100.0
+	_protect_label.offset_right = 100.0
+	_protect_label.offset_top = 24.0
+	_protect_label.offset_bottom = 52.0
+	_protect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_protect_label)
+	_build_label = Label.new()
+	_build_label.name = "BuildLabel"
+	_build_label.text = "build dev"
+	_build_label.add_theme_font_size_override("font_size", 12)
+	_build_label.anchor_left = 1.0
+	_build_label.anchor_right = 1.0
+	_build_label.anchor_top = 1.0
+	_build_label.anchor_bottom = 1.0
+	_build_label.offset_left = -160.0
+	_build_label.offset_right = -10.0
+	_build_label.offset_top = -26.0
+	_build_label.offset_bottom = -8.0
+	_build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(_build_label)
+	var game_data_build := get_node_or_null("/root/GameData")
+	if game_data_build != null:
+		_build_label.text = "build " + str(game_data_build.build_tag())
 	equip_button.pressed.connect(_on_equip_pressed)
 	unequip_button.pressed.connect(_on_unequip_pressed)
 	use_button.pressed.connect(_on_use_pressed)
@@ -125,6 +158,7 @@ func _process(_delta: float) -> void:
 	_sync_quest()
 	_sync_skills(p)
 	_sync_target(p)
+	_sync_protect(p)
 	_sync_debug(p)
 	if p.use_cooldown > 0.0:
 		use_button.disabled = true
@@ -448,6 +482,14 @@ func _sync_target(p) -> void:
 			str(t.get("display_name")), int(t.get("hp")), int(t.get("max_hp"))]
 	else:
 		_target_label.text = "Objetivo: -"
+
+
+func _sync_protect(p) -> void:
+	var t: float = float(p.protect_t)
+	if t > 0.0:
+		_protect_label.text = "PROTEGIDO (%.0fs)" % t
+	else:
+		_protect_label.text = ""
 
 
 func _sync_debug(p) -> void:

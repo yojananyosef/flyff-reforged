@@ -27,6 +27,12 @@ var npcs: Dictionary = {}
 var quests: Dictionary = {}
 var skills: Dictionary = {}
 var current_zone_id: String = "ironhold"
+var _build: Dictionary = {}
+
+
+func build_tag() -> String:
+	## Sello del export web (`data/build.json`, solo staging) o "dev".
+	return str(_build.get("tag", "dev"))
 
 
 func _ready() -> void:
@@ -37,6 +43,7 @@ func _ready() -> void:
 	npcs = _load_dict("npcs.json")
 	quests = _load_dict("quests.json")
 	skills = _load_dict("skills.json")
+	_build = _load_build()
 	if not zones.has(current_zone_id):
 		if zones.is_empty():
 			zones[current_zone_id] = FALLBACK_ZONE
@@ -82,6 +89,16 @@ func ui_texture(filename: String):
 
 func _candidate_paths(filename: String) -> Array[String]:
 	return ["res://../data/" + filename, "res://data/" + filename]
+
+
+func _load_build() -> Dictionary:
+	for path in _candidate_paths("build.json"):
+		if not FileAccess.file_exists(path):
+			continue
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
+		if parsed is Dictionary:
+			return parsed
+	return {}
 
 
 func _load_dict(filename: String) -> Dictionary:

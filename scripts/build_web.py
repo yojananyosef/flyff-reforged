@@ -14,6 +14,8 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import datetime
+import json
 import os
 import shutil
 import subprocess
@@ -66,6 +68,19 @@ progressive_web_app/background_color=Color(0, 0, 0, 1)
 """
 
 
+def _build_tag() -> str:
+    try:
+        short = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"], capture_output=True,
+            text=True, timeout=15, cwd=ROOT).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        short = ""
+    if not short:
+        short = "local"
+    day = datetime.date.today().isoformat()
+    return f"{short} {day}"
+
+
 def check_assets() -> list[str]:
     missing = []
     for rel, want in (("audio", ["music", "sfx"]), ("textures/ui", None),
@@ -103,6 +118,8 @@ def main(argv: list[str] | None = None) -> int:
         if os.path.isdir(staged):
             shutil.rmtree(staged)
         shutil.copytree(os.path.join(ROOT, "data"), staged)
+        with open(os.path.join(staged, "build.json"), "w", encoding="utf-8") as f:
+            f.write(json.dumps({"tag": _build_tag()}))
         with open(preset, "w", encoding="utf-8") as f:
             f.write(PRESET.format(out=out))
         os.makedirs(out, exist_ok=True)

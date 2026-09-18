@@ -171,6 +171,28 @@ func _run_sim() -> void:
 	_check(get_tree().get_nodes_in_group("monsters").size() == expected,
 		"monstruos generados = %d" % expected)
 
+	# --- proteccion (aethermere-spawn-safe; gracia fresca de _ready) ---
+	player.hp = player.max_hp
+	_check(player.protect_t > 0.0, "gracia activa al aparecer (%.1f s)" % player.protect_t)
+	var php: float = player.hp
+	player.take_mob_damage(50.0)
+	_check(is_equal_approx(player.hp, php), "inmune protegido (%.0f HP)" % player.hp)
+	var guard: Node3D = null
+	for m in get_tree().get_nodes_in_group("monsters"):
+		if not m.get("_dead"):
+			guard = m
+			break
+	if guard != null:
+		guard.set("aggro_target", null)
+		player.global_position = guard.global_position + Vector3(3.0, 0.0, 0.0)
+		for i in 60:
+			await get_tree().physics_frame
+		_check(guard.get("aggro_target") == null, "sin agro a protegido")
+		_check(is_equal_approx(player.hp, php), "sin dano por contacto protegido")
+		player.attack()
+		_check(player.protect_t <= 0.0, "atacar rompe la gracia")
+	player.protect_t = 0.0
+
 	dialogue.open("npc_001")
 	_check(dialogue.is_open(), "dialogo se abre con E")
 	_check(dialogue.current_node == "start", "dialogo inicia en nodo start")
@@ -202,6 +224,7 @@ func _run_sim() -> void:
 	_check(crow != null, "existe mon_004 en escena")
 	if crow != null:
 		player.global_position = crow.global_position + Vector3(1.0, 0.0, 0.0)
+		player.basic_cd = 0.0
 		player.attack()
 		_check(is_equal_approx(crow.hp, 20.0),
 			"basico con formula: 25 - max(1,5-0) = 20 (%.0f)" % crow.hp)
@@ -423,6 +446,8 @@ func _run_sim() -> void:
 		_check(calm.get("aggro_target") == null, "liebre mansa no agro a 4 m")
 	if brute != null:
 		brute.set("aggro_target", null)
+		player.hp = player.max_hp
+		player.protect_t = 0.0
 		player.global_position = brute.global_position + Vector3(5.0, 0.0, 0.0)
 		for i in 60:
 			await get_tree().physics_frame
@@ -454,6 +479,7 @@ func _run_sim() -> void:
 		tgt1.global_position = player.global_position + Vector3(2.0, 0.0, 0.0)
 		tgt2.global_position = player.global_position + Vector3(1.0, 0.0, 0.0)
 		player.target = tgt1
+		player.basic_cd = 0.0
 		player.attack()
 		_check(is_equal_approx(tgt1.hp, 22.0) and is_equal_approx(tgt2.hp, 30.0),
 			"basico pega al objetivo a 2m, no al cercano (%.0f/%.0f)" % [tgt1.hp, tgt2.hp])
@@ -474,6 +500,7 @@ func _run_sim() -> void:
 	# --- melee (aethermere-melee) ---
 	player.global_position = Vector3(0, 0.5, 0)
 	player.hp = player.max_hp
+	player.protect_t = 0.0
 	if brute != null and is_instance_valid(brute) and not brute.get("_dead"):
 		brute.set("aggro_target", null)
 		brute.global_position = player.global_position + Vector3(4.0, 0.0, 0.0)
@@ -504,6 +531,7 @@ func _run_sim() -> void:
 	if brute != null and is_instance_valid(brute) and not brute.get("_dead"):
 		brute.set("hp", 80.0)
 		player.hp = player.max_hp
+		player.protect_t = 0.0
 		player.global_position = Vector3(0, 0.5, 0)
 		brute.global_position = player.global_position + Vector3(6.0, 0.0, 0.0)
 		brute.set("aggro_target", null)
@@ -511,6 +539,8 @@ func _run_sim() -> void:
 		player.auto_attack = true
 		var whp0: float = brute.hp
 		for i in 240:
+			if i == 120:
+				player.hp = player.max_hp
 			await get_tree().physics_frame
 		_check(brute.hp < whp0, "auto-basicos bajan HP (%.0f -> %.0f)" % [whp0, brute.hp])
 		player.auto_attack = false
