@@ -2,7 +2,7 @@
 
 El jugador se ve como un vagabundo FlyFF animado en vez de una cápsula azul lisa.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Avatar con modelo y repliegue
 
@@ -25,7 +25,8 @@ intactas en ambos casos.
 
 Con modelo, el jugador SHALL reproducir `stand` en reposo, `walk` en
 bucle mientras se desplaza, y un clip `atk1` por golpe que vuelve a la
-locomoción al terminar.
+locomoción al terminar. Al golpear SHALL encarar a la víctima (el
+modelo no es simétrico como la cápsula).
 
 #### Scenario: Caminar con walk
 
@@ -36,3 +37,8 @@ locomoción al terminar.
 
 - **WHEN** el jugador con modelo aplica un básico
 - **THEN** reproduce `atk1` una vez y vuelve a `stand`/`walk`
+
+#### Scenario: Encarado al golpear
+
+- **WHEN** el jugador con modelo golpea quieto a una víctima
+- **THEN** lo visible queda orientado hacia ella (< 0.5 rad)
