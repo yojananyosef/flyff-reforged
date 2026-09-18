@@ -100,8 +100,10 @@ func _physics_process(delta: float) -> void:
 	if input_dir.length() > 0.01:
 		var yaw := cam_pivot.global_rotation.y
 		dir = (Basis(Vector3.UP, yaw) * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
-		# Gira el cuerpo hacia la direccion de marcha.
-		rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), 10.0 * delta)
+		# Gira solo la malla visible: el cuerpo (CharacterBody3D) no rota
+		# porque CamPivot/Camera cuelgan de el y la camara orbitaria sola
+		# al pulsar A/D (bug: parecia que se movia la camara y no el pj).
+		body_mesh.rotation.y = lerp_angle(body_mesh.rotation.y, atan2(dir.x, dir.z) - rotation.y, 10.0 * delta)
 
 	velocity.x = dir.x * speed
 	velocity.z = dir.z * speed
