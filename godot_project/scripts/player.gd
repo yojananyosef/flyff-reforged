@@ -47,6 +47,7 @@ var has_dest := false
 var move_dest := Vector3.ZERO
 var _move_marker: MeshInstance3D = null
 var _swing_tween: Tween = null
+var _rmb_held := false  # freelook: cámara solo mientras se mantiene RMB
 
 ## Gracia al aparecer: 6 s sin agro ni daño; atacar la rompe (huir no).
 const PROTECT_MAX := 6.0
@@ -64,7 +65,7 @@ static func phys_damage(atk: float, power: float, defense: float) -> float:
 
 func _ready() -> void:
 	add_to_group("player")
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	protect_t = PROTECT_MAX
 	var ring := MeshInstance3D.new()
 	ring.name = "MoveMarker"
@@ -82,15 +83,19 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if event is InputEventMouseMotion and _rmb_held:
 		cam_pivot.rotate_y(-event.relative.x * mouse_sensitivity)
 		spring.rotate_x(-event.relative.y * mouse_sensitivity)
 		spring.rotation.x = clampf(spring.rotation.x, -1.2, 0.6)
 	elif event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
-		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+		if mb.button_index == MOUSE_BUTTON_RIGHT:
+			_rmb_held = mb.pressed
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if mb.pressed \
+				else Input.MOUSE_MODE_VISIBLE
+		elif mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
 			if _can_world_click():
-				var hit := _click_hit(Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)
+				var hit := _click_hit()
 				var picked: Node3D = hit.get("monster")
 				if mb.double_click and picked != null:
 					target = picked
@@ -238,11 +243,8 @@ func _target_in_range(max_range: float) -> Node3D:
 
 
 func _can_world_click() -> bool:
-	## Con pointer-lock siempre. Sin él (petición denegada), también vale si
-	## no hay UI abierta (los Controles consumen sus clics antes de llegar
-	## aquí, así que un clic huérfano es del mundo).
-	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		return true
+	## Cursor libre por defecto: vale clicar salvo con UI abierta (los
+	## Controles consumen sus clics antes de llegar aquí).
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud != null:
 		if bool(hud.get("_inventory_open")):
@@ -255,17 +257,13 @@ func _can_world_click() -> bool:
 	return true
 
 
-func _click_hit(use_center: bool) -> Dictionary:
-	## Rayo de selección: centro con pointer-lock (la posición del evento no
-	## es fiable), posición del clic con ratón libre.
+func _click_hit() -> Dictionary:
+	## Rayo de selección desde la posición del cursor hasta 100 m.
 	var out := {"monster": null, "ground": null}
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
 		return out
-	var center := get_viewport().get_visible_rect().size / 2.0
-	var point: Vector2 = center
-	if not use_center:
-		point = get_viewport().get_mouse_position()
+	var point := get_viewport().get_mouse_position()
 	var origin := cam.project_ray_origin(point)
 	var end := origin + cam.project_ray_normal(point) * 100.0
 	var query := PhysicsRayQueryParameters3D.create(origin, end)
@@ -285,9 +283,9 @@ func _click_hit(use_center: bool) -> Dictionary:
 	return out
 
 
-func _near_crosshair(cam: Camera3D, center: Vector2) -> Node3D:
+func _near_crosshair(cam: Camera3D, point: Vector2) -> Node3D:
 	## Tolerancia: el rayo exacto falla con bichos pequeños en movimiento;
-	## se acepta el monstruo visible más cercano al punto de mira (140 px).
+	## se acepta el monstruo visible más cercano al cursor (140 px).
 	var best: Node3D = null
 	var best_d := 140.0
 	for m in get_tree().get_nodes_in_group("monsters"):
@@ -295,7 +293,7 @@ func _near_crosshair(cam: Camera3D, center: Vector2) -> Node3D:
 		if n == null or cam.is_position_behind(n.global_position):
 			continue
 		var d: float = cam.unproject_position(
-			n.global_position + Vector3(0, 1.0, 0)).distance_to(center)
+			n.global_position + Vector3(0, 1.0, 0)).distance_to(point)
 		if d < best_d:
 			best_d = d
 			best = n
@@ -497,6 +495,8 @@ func _respawn() -> void:
 	has_dest = false
 	basic_cd = 0.0
 	protect_t = PROTECT_MAX
+	_rmb_held = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_hide_marker()
 	if body_mesh != null:
 		body_mesh.scale = Vector3.ONE

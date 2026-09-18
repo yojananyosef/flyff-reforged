@@ -56,7 +56,7 @@ func open(p_npc_id: String) -> void:
 func close() -> void:
 	visible = false
 	npc_id = ""
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var audio = get_node_or_null("/root/AudioManager")
 	if audio != null:
 		audio.play_sfx("ui_close")

@@ -3,7 +3,7 @@
 Vestir a los monstruos con modelos reales animados del cliente:
 exportador skinned+animado, curaduría e integración mínima en el juego.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Exportador skinned y animado
 

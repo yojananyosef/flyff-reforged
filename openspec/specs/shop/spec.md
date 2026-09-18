@@ -3,7 +3,7 @@
 Economía mínima de Aethermere: oro, tienda del mercader Pell, compra y
 venta, y equipo (arma/armadura) que modifica ataque y defensa.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Oro y comercio
 

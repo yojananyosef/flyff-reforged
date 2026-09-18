@@ -3,7 +3,7 @@
 Hacer el juego jugable en navegador vía GitHub Pages con un build web
 reproducible.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Build web reproducible
 

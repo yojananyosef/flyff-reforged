@@ -3,7 +3,7 @@
 Convertir los modelos 3D del cliente FlyFF v21 a formatos estándar:
 parser `.o3d` → JSON intermedio y conversor → `.glb` importable por Godot.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Parser .o3d completo
 

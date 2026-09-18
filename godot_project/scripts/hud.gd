@@ -81,6 +81,7 @@ func _ready() -> void:
 	_crosshair.offset_top = -20.0
 	_crosshair.offset_bottom = 20.0
 	_crosshair.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_crosshair.visible = false  # freelook: el cursor es el puntero
 	add_child(_crosshair)
 	_target_label = Label.new()
 	_target_label.name = "TargetLabel"
@@ -136,7 +137,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.physical_keycode == KEY_I:
 			_inventory_open = not _inventory_open
 			inventory_panel.visible = _inventory_open
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if _inventory_open else Input.MOUSE_MODE_CAPTURED
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			var audio = get_node_or_null("/root/AudioManager")
 			if audio != null:
 				audio.play_sfx("ui_open" if _inventory_open else "ui_close")
@@ -291,8 +292,7 @@ func open_shop() -> void:
 func close_shop() -> void:
 	shop_open = false
 	_shop_panel.visible = false
-	if not _inventory_open:
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
 func _build_shop_panel() -> void:

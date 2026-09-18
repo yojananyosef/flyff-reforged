@@ -148,6 +148,7 @@ func _run_sim() -> void:
 	var quest_mgr: Node = get_node("/root/QuestManager")
 
 	_check(game_data.current_zone_id == "ironhold", "zona actual es ironhold")
+	_check(Input.mouse_mode == Input.MOUSE_MODE_VISIBLE, "raton libre por defecto")
 	_check(game_data.zones.size() >= 1 and game_data.dialogues.size() >= 2,
 		"datos cargados (zonas/dialogos)")
 
