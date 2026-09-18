@@ -30,7 +30,143 @@
       "exp": 70,
       "items": ["item_010"]
     },
-    "unlocks": null,
+    "unlocks": "quest_103",
     "description": "With the hares thinned, mossback boars grow bold. Drive off three of them."
+  },
+  {
+    "id": "quest_103",
+    "title": "Lights in the Fen",
+    "giver": "npc_001",
+    "requires": "quest_102",
+    "target": {
+      "type": "kill",
+      "monster_id": "mon_003",
+      "count": 4
+    },
+    "rewards": {
+      "exp": 90,
+      "items": ["item_004"]
+    },
+    "unlocks": "quest_104",
+    "description": "Fen wisps lure travelers off the paths. Quench four of them before someone follows a light and never returns."
+  },
+  {
+    "id": "quest_104",
+    "title": "A Murder of Crows",
+    "giver": "npc_001",
+    "requires": "quest_103",
+    "target": {
+      "type": "kill",
+      "monster_id": "mon_004",
+      "count": 6
+    },
+    "rewards": {
+      "exp": 100,
+      "items": ["item_003", "item_003"]
+    },
+    "unlocks": "quest_105",
+    "description": "Hollow crows strip the drying racks. Scatter six of the thieves for the granary's sake."
+  },
+  {
+    "id": "quest_105",
+    "title": "Teeth on the Old Road",
+    "giver": "npc_002",
+    "requires": "quest_104",
+    "target": {
+      "type": "kill",
+      "monster_id": "mon_005",
+      "count": 2
+    },
+    "rewards": {
+      "exp": 150,
+      "items": ["item_004", "item_004"]
+    },
+    "unlocks": "quest_106",
+    "description": "Rustjaw wolves den along the old road where my scavengers walk. Pell will pay in tonics for two pelts' worth of proof."
+  },
+  {
+    "id": "quest_106",
+    "title": "Boars in the Barley",
+    "giver": "npc_002",
+    "requires": "quest_105",
+    "target": {
+      "type": "kill",
+      "monster_id": "mon_002",
+      "count": 5
+    },
+    "rewards": {
+      "exp": 170,
+      "items": ["item_004"]
+    },
+    "unlocks": "quest_107",
+    "description": "The mossbacks are back and bolder, rooting up whole terraces. Pell's buyers still pay for hide — bring five down."
+  },
+  {
+    "id": "quest_107",
+    "title": "Quench the Marshlights",
+    "giver": "npc_001",
+    "requires": "quest_106",
+    "target": {
+      "type": "kill",
+      "monster_id": "mon_003",
+      "count": 5
+    },
+    "rewards": {
+      "exp": 200,
+      "items": ["item_003", "item_003", "item_003"]
+    },
+    "unlocks": "quest_108",
+    "description": "The wisps gather thicker where the fen meets the fields. Maren asks for five more quenched lights."
+  },
+  {
+    "id": "quest_108",
+    "title": "The Pack Grows Bold",
+    "giver": "npc_001",
+    "requires": "quest_107",
+    "target": {
+      "type": "kill",
+      "monster_id": "mon_005",
+      "count": 3
+    },
+    "rewards": {
+      "exp": 260,
+      "items": ["item_004", "item_004", "item_004"]
+    },
+    "unlocks": "quest_109",
+    "description": "Wolves at the palisade now, not just the road. Three of them, warden, before they learn the taste of barley-fed stock."
+  },
+  {
+    "id": "quest_109",
+    "title": "Hares Again",
+    "giver": "npc_002",
+    "requires": "quest_108",
+    "target": {
+      "type": "kill",
+      "monster_id": "mon_001",
+      "count": 8
+    },
+    "rewards": {
+      "exp": 220,
+      "items": ["item_004", "item_004"]
+    },
+    "unlocks": "quest_110",
+    "description": "Culls never hold with hares. Pell's stewpots are empty and the terraces crawl again — eight this time."
+  },
+  {
+    "id": "quest_110",
+    "title": "The Rustjaw Alpha",
+    "giver": "npc_001",
+    "requires": "quest_109",
+    "target": {
+      "type": "kill",
+      "monster_id": "mon_005",
+      "count": 1
+    },
+    "rewards": {
+      "exp": 300,
+      "items": ["item_009", "item_009"]
+    },
+    "unlocks": null,
+    "description": "One great rustjaw leads the pack, scarred and cunning. End the alpha and Ironhold breathes easy — the council will remember this."
   }
 ]

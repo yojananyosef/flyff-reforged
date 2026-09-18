@@ -5,7 +5,7 @@
     "zone": "ironhold",
     "role": "quest_giver",
     "dialogue_id": "dlg_maren_intro",
-    "quests_available": ["quest_101", "quest_102"]
+    "quests_available": ["quest_101", "quest_102", "quest_103", "quest_104", "quest_107", "quest_108", "quest_110"]
   },
   {
     "id": "npc_002",
@@ -13,6 +13,6 @@
     "zone": "ironhold",
     "role": "merchant",
     "dialogue_id": "dlg_pell_intro",
-    "quests_available": []
+    "quests_available": ["quest_105", "quest_106", "quest_109"]
   }
 ]

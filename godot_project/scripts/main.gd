@@ -283,6 +283,24 @@ func _run_sim() -> void:
 	hud.close_shop()
 	_check(not hud.is_shop_open(), "tienda se cierra")
 
+	# --- cadena 103-110 (la 102 quedo en 1/3: se remata aqui) ---
+	quest_mgr.report_kill("mon_002")
+	quest_mgr.report_kill("mon_002")
+	_check("quest_102" in quest_mgr.done, "quest_102 completada (3/3)")
+	var chain := ["quest_103", "quest_104", "quest_105", "quest_106",
+		"quest_107", "quest_108", "quest_109", "quest_110"]
+	for qid in chain:
+		_check(qid in quest_mgr.available_quests(), qid + " disponible en cadena")
+		_check(quest_mgr.accept_quest(qid), "aceptada " + qid)
+		var q: Dictionary = game_data.quests[qid]
+		var need := int(q["target"]["count"])
+		for i in need:
+			quest_mgr.report_kill(str(q["target"]["monster_id"]))
+		_check(qid in quest_mgr.done, qid + " completada")
+	_check(quest_mgr.done.size() == 10, "10/10 misiones completadas")
+	_check(quest_mgr.available_quests().is_empty(), "sin misiones pendientes")
+	_check(player.level >= 5, "nivel >= 5 al cierre (es %d)" % player.level)
+
 	if _failures.is_empty():
 		print("SIM-QUEST PASS")
 		get_tree().quit(0)

@@ -12,6 +12,10 @@
             "next": "quest_offer"
           },
           {
+            "text": "What work remains for a warden?",
+            "next": "quest_board"
+          },
+          {
             "text": "I need a moment to look around.",
             "next": "farewell"
           }
@@ -27,6 +31,20 @@
           },
           {
             "text": "That sounds dangerous. Farewell for now.",
+            "next": "farewell"
+          }
+        ]
+      },
+      {
+        "node_id": "quest_board",
+        "text": "The palisade log never empties: wisps in the fen, crows on the racks, wolves on the road. Take what you can handle — the council notes every name.",
+        "options": [
+          {
+            "text": "I will take the next task.",
+            "next": "farewell"
+          },
+          {
+            "text": "Not yet.",
             "next": "farewell"
           }
         ]
@@ -51,6 +69,10 @@
             "next": "wilds"
           },
           {
+            "text": "Any paid work?",
+            "next": "quest_board"
+          },
+          {
             "text": "Just passing through.",
             "next": "farewell"
           }
@@ -62,6 +84,20 @@
         "options": [
           {
             "text": "Thanks for the warning.",
+            "next": "farewell"
+          }
+        ]
+      },
+      {
+        "node_id": "quest_board",
+        "text": "Always something with teeth, friend. Wolves on the road, boars in the barley, hares everywhere. Coin and tonics for proof — take your pick.",
+        "options": [
+          {
+            "text": "I will take the job.",
+            "next": "farewell"
+          },
+          {
+            "text": "Maybe later.",
             "next": "farewell"
           }
         ]

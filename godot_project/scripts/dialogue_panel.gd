@@ -86,7 +86,7 @@ func _refresh_accept(game_data: Node) -> void:
 	var quest_mgr := get_node_or_null("/root/QuestManager")
 	var show := false
 	var label := "Aceptar misión"
-	if quest_mgr != null and current_node == "quest_offer":
+	if quest_mgr != null and (current_node == "quest_offer" or current_node == "quest_board"):
 		var avail: Array = quest_mgr.npc_available_quests(npc_id)
 		if not avail.is_empty():
 			show = true
