@@ -23,6 +23,7 @@
     "type": "consumable",
     "level_required": 1,
     "price": 4,
+    "use_effect": {"hp": 25},
     "description": "Dense rye loaf. Restores a little health on the road."
   },
   {
@@ -31,6 +32,7 @@
     "type": "consumable",
     "level_required": 1,
     "price": 8,
+    "use_effect": {"mp": 20},
     "description": "Bitter herbal draught that warms the limbs and restores mana."
   },
   {

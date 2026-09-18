@@ -327,6 +327,25 @@ func _run_sim() -> void:
 	_check(quest_mgr.done.size() == done_s, "misiones restauradas (%d)" % done_s)
 	_check(int(player.inventory.get("item_003", 0)) > 0, "inventario restaurado")
 
+	# --- consumibles ---
+	player.hp = 50.0
+	var bread_n: int = int(player.inventory.get("item_003", 0))
+	_check(player.use_item("item_003"), "usar pan herido")
+	_check(is_equal_approx(player.hp, 75.0), "pan +25 HP (%.0f)" % player.hp)
+	_check(int(player.inventory.get("item_003", 0)) == bread_n - 1, "pan consumido")
+	_check(not player.use_item("item_003"), "cooldown bloquea segundo pan")
+	_check(not player.use_item("item_001"), "espada no usable")
+	_check(not player.use_item("item_XXX"), "inexistente no usable")
+	player.hp = player.max_hp
+	player.mp = player.max_mp
+	player.use_cooldown = 0.0
+	_check(not player.use_item("item_003"), "a tope no se consume")
+	_check(not player.use_item("item_004"), "tonico a MP lleno se rechaza")
+	player.mp = 10.0
+	player.use_cooldown = 0.0
+	_check(player.use_item("item_004"), "usar tonico con MP bajo")
+	_check(is_equal_approx(player.mp, 30.0), "tonico +20 MP (%.0f)" % player.mp)
+
 	if _failures.is_empty():
 		print("SIM-QUEST PASS")
 		get_tree().quit(0)

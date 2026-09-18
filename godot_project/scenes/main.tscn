@@ -215,7 +215,12 @@ anchor_right = 1.0
 offset_left = -330.0
 offset_top = 10.0
 offset_right = -10.0
-offset_bottom = 300.0
+offset_bottom = 344.0
+
+[node name="Bg" type="ColorRect" parent="HUD/InventoryPanel"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.05, 0.08, 0.95)
 
 [node name="Title" type="Label" parent="HUD/InventoryPanel"]
 offset_left = 10.0
@@ -246,11 +251,19 @@ text = "Desequipar"
 
 [node name="EquippedLabel" type="Label" parent="HUD/InventoryPanel"]
 offset_left = 10.0
-offset_top = 240.0
+offset_top = 238.0
 offset_right = 310.0
-offset_bottom = 284.0
+offset_bottom = 276.0
+theme_override_font_sizes/font_size = 14
 text = "Arma: - · Armadura: -"
 autowrap_mode = 2
+
+[node name="UseButton" type="Button" parent="HUD/InventoryPanel"]
+offset_left = 10.0
+offset_top = 282.0
+offset_right = 310.0
+offset_bottom = 312.0
+text = "Usar"
 
 [node name="DialogueLayer" type="CanvasLayer" parent="."]
 visible = false

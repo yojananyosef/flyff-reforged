@@ -11,6 +11,7 @@ extends CharacterBody3D
 @export var base_attack: float = 5.0
 @export var base_defense: float = 1.0
 @export var mp_regen: float = 3.0
+@export var use_cooldown_max: float = 3.0  # enfriamiento compartido de consumibles
 
 ## Cooldowns/duraciones por skill (skills.json no trae tiempos; ver design).
 const SKILL_TIMES := {
@@ -35,6 +36,7 @@ var equipment: Dictionary = {"weapon": "", "armor": ""}
 
 var cooldown_left: Dictionary = {"skill_001": 0.0, "skill_002": 0.0, "skill_003": 0.0}
 var bulwark_time: float = 0.0
+var use_cooldown: float = 0.0
 
 @onready var cam_pivot: Node3D = $CamPivot
 @onready var spring: SpringArm3D = $CamPivot/SpringArm3D
@@ -81,6 +83,7 @@ func _physics_process(delta: float) -> void:
 	mp = clampf(mp + mp_regen * delta, 0.0, max_mp)
 	for sid in cooldown_left:
 		cooldown_left[sid] = maxf(0.0, float(cooldown_left[sid]) - delta)
+	use_cooldown = maxf(0.0, use_cooldown - delta)
 	if bulwark_time > 0.0:
 		bulwark_time -= delta
 		if bulwark_time <= 0.0:
@@ -258,6 +261,32 @@ func unequip(slot: String) -> bool:
 	add_item(current, 1)
 	_audio().play_sfx("ui_click")
 	print("[Equipo] %s desequipado" % current)
+	return true
+
+
+func use_item(item_id: String) -> bool:
+	## Usa un consumible: exige unidad, efecto aplicable y cooldown libre.
+	var def := item_def(item_id)
+	if str(def.get("type", "")) != "consumable":
+		return false
+	if int(inventory.get(item_id, 0)) <= 0:
+		return false
+	if use_cooldown > 0.0:
+		return false
+	var fx: Dictionary = def.get("use_effect", {})
+	var need_hp := float(fx.get("hp", 0.0)) > 0.0 and hp < max_hp
+	var need_mp := float(fx.get("mp", 0.0)) > 0.0 and mp < max_mp
+	if not need_hp and not need_mp:
+		return false
+	inventory[item_id] = int(inventory[item_id]) - 1
+	if int(inventory[item_id]) <= 0:
+		inventory.erase(item_id)
+	heal(float(fx.get("hp", 0.0)))
+	mp = clampf(mp + float(fx.get("mp", 0.0)), 0.0, max_mp)
+	use_cooldown = use_cooldown_max
+	inventory_version += 1
+	_audio().play_sfx("heal")
+	print("[Uso] %s (HP %.0f/%.0f MP %.0f/%.0f)" % [item_id, hp, max_hp, mp, max_mp])
 	return true
 
 

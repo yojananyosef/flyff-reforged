@@ -32,6 +32,7 @@ var _shop_gold: Label
 @onready var equip_button: Button = $InventoryPanel/EquipButton
 @onready var unequip_button: Button = $InventoryPanel/UnequipButton
 @onready var equipped_label: Label = $InventoryPanel/EquippedLabel
+@onready var use_button: Button = $InventoryPanel/UseButton
 
 
 func _ready() -> void:
@@ -44,6 +45,7 @@ func _ready() -> void:
 	_build_shop_panel()
 	equip_button.pressed.connect(_on_equip_pressed)
 	unequip_button.pressed.connect(_on_unequip_pressed)
+	use_button.pressed.connect(_on_use_pressed)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -69,6 +71,12 @@ func _process(_delta: float) -> void:
 	_sync_bar(exp_bar, exp_label, p.exp, p.max_exp)
 	_sync_quest()
 	_sync_skills(p)
+	if p.use_cooldown > 0.0:
+		use_button.disabled = true
+		use_button.text = "Usar (%.0fs)" % p.use_cooldown
+	else:
+		use_button.disabled = false
+		use_button.text = "Usar"
 	if _inventory_open and p.inventory_version != _inventory_seen_version:
 		_rebuild_inventory()
 
@@ -156,6 +164,15 @@ func _on_unequip_pressed() -> void:
 	elif str(p.equipment.get("armor", "")) != "":
 		p.unequip("armor")
 	_rebuild_inventory()
+
+
+func _on_use_pressed() -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	if players.is_empty() or inventory_list.get_selected_items().is_empty():
+		return
+	var p = players[0]
+	if p.use_item(_inv_ids[inventory_list.get_selected_items()[0]]):
+		_rebuild_inventory()
 
 
 # --- Tienda ---

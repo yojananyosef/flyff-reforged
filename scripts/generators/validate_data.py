@@ -127,6 +127,10 @@ def main(argv: list[str] | None = None) -> int:
             ref(m in monsters, f"zones {z.get('id')}: monstruo inexistente {m!r}")
 
     # Contenido minimo Aethermere
+    for it in items.values():
+        if it.get("type") == "consumable":
+            ok = isinstance(it.get("use_effect"), dict) and bool(it["use_effect"])
+            ref(ok, "items %s: consumible sin use_effect" % it.get("id"))
     ref("ironhold" in zones, "falta zona 'ironhold'")
     ref("quest_101" in quests and quests["quest_101"].get("unlocks") == "quest_102",
         "quest_101 debe desbloquear quest_102")
