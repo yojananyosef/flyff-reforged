@@ -143,8 +143,16 @@ offset_right = 310.0
 offset_bottom = 30.0
 text = "Ironhold"
 
+[node name="HPOrb" type="TextureRect" parent="HUD/Panel"]
+offset_left = 8.0
+offset_top = 34.0
+offset_right = 28.0
+offset_bottom = 60.0
+expand_mode = 1
+stretch_mode = 5
+
 [node name="HPBar" type="ProgressBar" parent="HUD/Panel"]
-offset_left = 10.0
+offset_left = 34.0
 offset_top = 36.0
 offset_right = 210.0
 offset_bottom = 58.0
@@ -159,8 +167,16 @@ offset_right = 310.0
 offset_bottom = 58.0
 text = "100 / 100"
 
+[node name="MPOrb" type="TextureRect" parent="HUD/Panel"]
+offset_left = 8.0
+offset_top = 62.0
+offset_right = 28.0
+offset_bottom = 88.0
+expand_mode = 1
+stretch_mode = 5
+
 [node name="MPBar" type="ProgressBar" parent="HUD/Panel"]
-offset_left = 10.0
+offset_left = 34.0
 offset_top = 64.0
 offset_right = 210.0
 offset_bottom = 86.0
@@ -175,8 +191,16 @@ offset_right = 310.0
 offset_bottom = 86.0
 text = "50 / 50"
 
+[node name="EXPOrb" type="TextureRect" parent="HUD/Panel"]
+offset_left = 8.0
+offset_top = 90.0
+offset_right = 28.0
+offset_bottom = 116.0
+expand_mode = 1
+stretch_mode = 5
+
 [node name="EXPBar" type="ProgressBar" parent="HUD/Panel"]
-offset_left = 10.0
+offset_left = 34.0
 offset_top = 92.0
 offset_right = 210.0
 offset_bottom = 114.0
@@ -217,10 +241,13 @@ offset_top = 10.0
 offset_right = -10.0
 offset_bottom = 344.0
 
-[node name="Bg" type="ColorRect" parent="HUD/InventoryPanel"]
+[node name="Bg" type="NinePatchRect" parent="HUD/InventoryPanel"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.05, 0.05, 0.08, 0.95)
+patch_margin_left = 16.0
+patch_margin_top = 16.0
+patch_margin_right = 16.0
+patch_margin_bottom = 16.0
 
 [node name="Title" type="Label" parent="HUD/InventoryPanel"]
 offset_left = 10.0
@@ -280,10 +307,13 @@ offset_top = -140.0
 offset_right = 260.0
 offset_bottom = 140.0
 
-[node name="Bg" type="ColorRect" parent="DialogueLayer/Panel"]
+[node name="Bg" type="NinePatchRect" parent="DialogueLayer/Panel"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.05, 0.05, 0.08, 0.95)
+patch_margin_left = 14.0
+patch_margin_top = 14.0
+patch_margin_right = 14.0
+patch_margin_bottom = 14.0
 
 [node name="SpeakerLabel" type="Label" parent="DialogueLayer/Panel"]
 offset_left = 16.0

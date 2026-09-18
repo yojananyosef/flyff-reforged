@@ -29,7 +29,11 @@ var _shop_gold: Label
 @onready var exp_label: Label = $Panel/EXPLabel
 @onready var zone_label: Label = $Panel/ZoneLabel
 @onready var quest_label: Label = $Panel/QuestLabel
+@onready var hp_orb: TextureRect = $Panel/HPOrb
+@onready var mp_orb: TextureRect = $Panel/MPOrb
+@onready var exp_orb: TextureRect = $Panel/EXPOrb
 @onready var inventory_panel: Control = $InventoryPanel
+@onready var inv_bg: NinePatchRect = $InventoryPanel/Bg
 @onready var inventory_list: ItemList = $InventoryPanel/InventoryList
 @onready var equip_button: Button = $InventoryPanel/EquipButton
 @onready var unequip_button: Button = $InventoryPanel/UnequipButton
@@ -45,6 +49,11 @@ func _ready() -> void:
 	inventory_panel.visible = false
 	_build_skill_bar(game_data)
 	_build_shop_panel()
+	if game_data != null:
+		_apply_skin(inv_bg, game_data.ui_texture("WndMessagebox.tga"))
+		_apply_icon(hp_orb, game_data.ui_texture("BarRed.tga"))
+		_apply_icon(mp_orb, game_data.ui_texture("BarSky.tga"))
+		_apply_icon(exp_orb, game_data.ui_texture("BarGreen.tga"))
 	_debug_label = Label.new()
 	_debug_label.name = "DebugLabel"
 	_debug_label.anchor_left = 1.0
@@ -193,6 +202,17 @@ func _on_use_pressed() -> void:
 
 # --- Tienda ---
 
+func _apply_skin(rect: NinePatchRect, tex) -> void:
+	if tex != null:
+		rect.texture = tex
+
+
+func _apply_icon(icon: TextureRect, tex) -> void:
+	if tex != null:
+		icon.texture = tex
+	else:
+		icon.visible = false
+
 func is_shop_open() -> bool:
 	return shop_open
 
@@ -225,11 +245,17 @@ func _build_shop_panel() -> void:
 	panel.visible = false
 	add_child(panel)
 	_shop_panel = panel
-	var bg := ColorRect.new()
-	bg.color = Color(0.06, 0.05, 0.03, 0.97)
+	var bg := NinePatchRect.new()
 	bg.anchor_right = 1.0
 	bg.anchor_bottom = 1.0
+	bg.patch_margin_left = 16.0
+	bg.patch_margin_top = 16.0
+	bg.patch_margin_right = 16.0
+	bg.patch_margin_bottom = 16.0
 	panel.add_child(bg)
+	var game_data := get_node_or_null("/root/GameData")
+	if game_data != null:
+		_apply_skin(bg, game_data.ui_texture("WndMessagebox.tga"))
 	_shop_gold = _shop_label(panel, "Oro: 0", 12, 8, 508, 30)
 	_shop_label(panel, "Comprar", 12, 34, 250, 54)
 	_shop_label(panel, "Vender (mitad)", 262, 34, 508, 54)

@@ -8,6 +8,7 @@ var dialogue_id: String = ""
 var current_node: String = ""
 
 @onready var panel: Control = $Panel
+@onready var bg: NinePatchRect = $Panel/Bg
 @onready var speaker_label: Label = $Panel/SpeakerLabel
 @onready var text_label: Label = $Panel/TextLabel
 @onready var options_box: VBoxContainer = $Panel/OptionsBox
@@ -18,6 +19,11 @@ var current_node: String = ""
 
 func _ready() -> void:
 	visible = false
+	var game_data = get_node_or_null("/root/GameData")
+	if game_data != null:
+		var skin = game_data.ui_texture("WndMessagebox.tga")
+		if skin != null:
+			bg.texture = skin
 	accept_button.pressed.connect(_on_accept)
 	trade_button.pressed.connect(_on_trade)
 	close_button.pressed.connect(close)

@@ -16,6 +16,8 @@ export_presets.cfg
 *.res
 # Audio del cliente copiado por scripts/parsers/setup_audio.py (no versionar)
 godot_project/audio/
+# Texturas UI del cliente (setup_ui_textures.py, no versionar)
+godot_project/textures/
 
 # OS / editores
 .DS_Store
