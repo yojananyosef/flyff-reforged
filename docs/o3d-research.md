@@ -1,7 +1,9 @@
 # Investigación del formato .o3d (modelos 3D FlyFF v21)
 
-Estado: header resuelto, cuerpo pendiente. Documento vivo — actualizar a
-medida que avance el reverse engineering.
+Estado: **resuelto y verificado** — parser completo (`scripts/parsers/o3d_parser.py`)
+y conversor a `.glb` (`scripts/converters/o3d_to_glb.py`). Batch: **6201/6202
+archivos cuadran al byte exacto** con índices en rango; 3 modelos importados
+en Godot sin errores con capturas en `docs/o3d-proof/`.
 
 ## Fuente de referencia
 
@@ -38,37 +40,50 @@ ya es la longitud exacta del nombre.
 Versiones observadas: `VER_MESH = 20` mínimo aceptado; archivos reales en
 21 y 22. Coherente con cliente v21.
 
-## Cuerpo (pendiente)
+## Cuerpo (resuelto)
 
-Después del header:
+Flujo `LoadObject` completo, verificado por cuadre exacto en batch:
 
-1. Los primeros ~100 bytes tras `id/hash` son zeros en modelos pequeños
-   (reservados + bounding box de modelos sin colisión).
-2. Cada `GMOBJECT` (`LoadGMObject`): `bb_min/max`, flags
-   (`opacity/bump/rigid` + 28 bytes skip), conteos
-   (`vertex_list/vb/face_list/ib`), buffers de vértices (`SKINVERTEX` 40 bytes
-   o `NORMALVERTEX` 32 bytes), índices `u16`, vértices physique opcionales,
-   materiales (`GLWMATERIAL9` 68 bytes + nombre de textura) y bloques de material.
-3. Objetos `GMT_SKIN` llevan pesos (`w1/w2/matIdx`); `GMT_NORMAL` son rígidos.
-4. Si `max_frame > 0`, cada objeto normal lleva su `TM_ANIMATION` embebido
-   (`LoadTMAni`: flag + frames de 28 bytes, igual que `.ani`).
+1. `u32 coll_flag`: si != 0, un `GMOBJECT` de colisión (tipo NORMAL).
+2. `u32 lod_flag` + `u32 bone_count`: huesos base (mat4 ×2 cada uno);
+   si `max_frame > 0`, `ReadTM` (igual que `.ani`) + `u32 sendVS`.
+3. `u32 pool_size` + 3 grupos si LOD, 1 si no; por grupo `u32 obj_count`.
+4. Por objeto: `u32 ntype` (tipo = `& 0xFFFF`: 0 NORMAL, 1 SKIN, 2 BONE;
+   luz = `& 0x80000000`), `useBone[]`, id, padre (−1 o tipo), mat4 local.
+5. `LoadGMObject`: bbox, `opacity/bump/rigid` + 28 skip, conteos
+   (`vertex_list/vb/face_list/ib`), `vertexList` (vec3), VB
+   (**SKIN 44 B / NORMAL 32 B, el flag `bump` NO cambia el tamaño**),
+   índices `u16` (IB + IIB), physique opcional, materiales
+   (`GLWMATERIAL9` 68 B + nombre) y bloques (136 B).
+6. Objetos NORMAL con `max_frame > 0` llevan `LoadTMAni` (flag + frames
+   de 28 B). Al final, `nAttr` solo si quedan bytes (el lector C++ lee
+   de más sin comprobar EOF).
 
-## Estrategia de parser Python (Fase 2)
+Hallazgos:
 
-1. Reutilizar lectura de header + `ReadTM` ya validados en `chr_parser.py` /
-   `ani_parser.py` (mismo `TM_ANIMATION` de 28 bytes).
-2. Implementar `LoadGMObject` paso a paso con un modo verbose que vuelque
-   offsets, validando `vertex_count` e `index_count` contra el tamaño restante.
-3. Exportar a `.glb` con `pygltflib` (vértices + normales + UV + índices +
-   materiales con textura `.dds`).
-4. El MVP no bloquea por esto: la base Godot usa placeholders hasta la Fase 5.
+- LOD = 3 grupos con la misma malla en 3 resoluciones; el conversor
+  exporta el grupo 0 por defecto (`--group -1` = todos).
+- `Part_femaleHead.o3d` no es `.o3d` (empieza con `10 00 00 00 B842...`,
+  sin nombre XOR): única excepción del batch, queda fuera.
+- Asunciones documentadas: `matIdx` = 2×u16 de huesos con pesos w1/w2;
+  matrices volcadas tal cual (capturas confirman ensamblado correcto);
+  Y-up coincide (alturas en Y, p. ej. Rangda 0–10.4 m).
 
-## Preguntas abiertas
+## Estrategia de parser Python (completada)
 
-- [ ] Tamaños exactos de `SKINVERTEX` con bump (`SKINVERTEX_BUMP` vs normal).
-- [ ] Significado de `m_bSendVS` tras los huesos base.
-- [ ] Estructura de `LOD_GROUP` con `m_bLOD = 1` (pocos modelos la usan).
-- [ ] Atributos `MOTION_ATTR` finales cuando `nAttr == max_frame` (versión ≥ 21).
+1. ~~Reutilizar lectura de header + `ReadTM`...~~ Hecho en `o3d_parser.py`.
+2. ~~Implementar `LoadGMObject` paso a paso...~~ Hecho y validado en batch.
+3. ~~Exportar a `.glb` con `pygltflib`...~~ Hecho sin dependencias
+   (`o3d_to_glb.py`): el MVP sigue con placeholders hasta la Fase 5,
+   cuando se fusionarán esqueletos (huesos `.o3d` sin nombres + `.chr`)
+   y se convertirán texturas `.dds`.
+
+## Preguntas abiertas (Fase 5)
+
+- [ ] Fusión esqueleto `.o3d` (sin nombres) + `.chr` para skinning animado.
+- [ ] Conversor `.dds` → `.png` y materiales con textura en el `.glb`.
+- [ ] `m_bSendVS` tras los huesos base (preservado, sin interpretar).
+- [ ] `Part_femaleHead.o3d`: identificar su formato real.
 
 ## Archivos de prueba
 
