@@ -8,7 +8,10 @@
     "attack": 4,
     "defense": 0,
     "exp": 8,
-    "drops": ["item_005"]
+    "drops": [
+      "item_005"
+    ],
+    "model": "Mvr_PetCat1"
   },
   {
     "id": "mon_002",
@@ -19,7 +22,10 @@
     "attack": 7,
     "defense": 2,
     "exp": 14,
-    "drops": ["item_006"]
+    "drops": [
+      "item_006"
+    ],
+    "model": "Mvr_Buur"
   },
   {
     "id": "mon_003",
@@ -30,7 +36,10 @@
     "attack": 8,
     "defense": 0,
     "exp": 16,
-    "drops": ["item_007"]
+    "drops": [
+      "item_007"
+    ],
+    "model": "Mvr_Dreamflame01"
   },
   {
     "id": "mon_004",
@@ -41,7 +50,10 @@
     "attack": 5,
     "defense": 0,
     "exp": 7,
-    "drops": ["item_008"]
+    "drops": [
+      "item_008"
+    ],
+    "model": "Mvr_PetParrot"
   },
   {
     "id": "mon_005",
@@ -52,6 +64,9 @@
     "attack": 11,
     "defense": 3,
     "exp": 24,
-    "drops": ["item_009"]
+    "drops": [
+      "item_009"
+    ],
+    "model": "Mvr_PetDog1"
   }
 ]

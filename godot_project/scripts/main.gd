@@ -107,6 +107,7 @@ func _spawn_one(container: Node3D, def: Dictionary, center: Vector3, idx: int) -
 	m.add_child(shape)
 
 	var mesh_inst := MeshInstance3D.new()
+	mesh_inst.name = "Body"
 	var cap_mesh := CapsuleMesh.new()
 	cap_mesh.radius = 0.4
 	cap_mesh.height = 1.2
@@ -209,8 +210,10 @@ func _run_sim() -> void:
 	if victim != null:
 		var prog0: Array = quest_mgr.progress("quest_102")
 		victim.take_damage(999.0)
-		await get_tree().process_frame
-		await get_tree().process_frame
+		var waited := 0
+		while is_instance_valid(victim) and waited < 400:
+			await get_tree().process_frame
+			waited += 1
 		_check(not is_instance_valid(victim), "mon_002 muere y se libera")
 		var prog1: Array = quest_mgr.progress("quest_102")
 		_check(prog1.size() == 2 and int(prog1[0]) == int(prog0[0]) + 1,

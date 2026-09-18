@@ -5,6 +5,7 @@ extends CharacterBody3D
 
 var monster_id: String = ""
 var display_name: String = "Monster"
+var model_name: String = ""
 var level: int = 1
 var max_hp: float = 10.0
 var hp: float = 10.0
@@ -12,6 +13,8 @@ var attack: float = 1.0
 var defense: float = 0.0
 var exp_value: float = 1.0
 var drops: Array = []
+var _dead := false
+var _anim: AnimationPlayer
 
 var wander_speed: float = 1.5
 var _dir: Vector3 = Vector3.ZERO
@@ -24,6 +27,7 @@ var _touch_cooldown: float = 0.0
 func setup(def: Dictionary) -> void:
 	monster_id = str(def.get("id", "mon_000"))
 	display_name = str(def.get("name", monster_id))
+	model_name = str(def.get("model", ""))
 	level = int(def.get("level", 1))
 	max_hp = float(def.get("hp", 10))
 	hp = max_hp
@@ -37,6 +41,49 @@ func _ready() -> void:
 	add_to_group("monsters")
 	_pick_direction()
 	_refresh_label()
+	_mount_model()
+
+
+func _mount_model() -> void:
+	## Instancia el .glb si existe (setup_models.py); si no, cápsula.
+	if model_name == "":
+		return
+	var path := "res://models/" + model_name + ".glb"
+	if not FileAccess.file_exists(path):
+		return
+	var packed = load(path)
+	if not (packed is PackedScene):
+		return
+	var inst = (packed as PackedScene).instantiate()
+	inst.name = "Model"
+	add_child(inst)
+	var body := get_node_or_null("Body")
+	if body != null:
+		body.visible = false
+	_anim = _find_anim(self)
+	_play_anim(["stand", "Stand", "idle1", "Idle1", "idle", "Default"], true)
+
+
+func _find_anim(n: Node) -> AnimationPlayer:
+	if n is AnimationPlayer:
+		return n
+	for c in n.get_children():
+		var r := _find_anim(c)
+		if r != null:
+			return r
+	return null
+
+
+func _play_anim(candidates: Array, loop: bool) -> bool:
+	if _anim == null:
+		return false
+	for name in candidates:
+		if _anim.has_animation(str(name)):
+			var a := _anim.get_animation(str(name))
+			a.loop_mode = Animation.LOOP_LINEAR if loop else Animation.LOOP_NONE
+			_anim.play(str(name))
+			return true
+	return false
 
 
 func _physics_process(delta: float) -> void:
@@ -59,6 +106,8 @@ func _physics_process(delta: float) -> void:
 
 
 func take_damage(amount: float) -> void:
+	if _dead:
+		return
 	hp = clampf(hp - amount, 0.0, max_hp)
 	_refresh_label()
 	if hp <= 0.0:
@@ -70,6 +119,8 @@ func take_damage(amount: float) -> void:
 
 
 func _die() -> void:
+	_dead = true
+	set_physics_process(false)
 	var quest_mgr := get_node_or_null("/root/QuestManager")
 	if quest_mgr != null:
 		quest_mgr.report_kill(monster_id)
@@ -88,6 +139,11 @@ func _die() -> void:
 		audio.play_sfx("monster_die")
 		if not drops.is_empty():
 			audio.play_sfx("pickup")
+	if _play_anim(["die1", "Die1", "dmgDie"], false):
+		var frames := 0
+		while _anim.is_playing() and frames < 300:
+			await get_tree().process_frame
+			frames += 1
 	remove_from_group("monsters")
 	queue_free()
 

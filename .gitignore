@@ -18,6 +18,8 @@ export_presets.cfg
 godot_project/audio/
 # Texturas UI del cliente (setup_ui_textures.py, no versionar)
 godot_project/textures/
+# Modelos convertidos (setup_models.py, no versionar)
+godot_project/models/
 
 # OS / editores
 .DS_Store

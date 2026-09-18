@@ -85,6 +85,9 @@ def main(argv: list[str] | None = None) -> int:
         ref(m.get("zone") in zones, f"monsters {m.get('id')}: zona inexistente {m.get('zone')!r}")
         for d in m.get("drops", []):
             ref(d in items, f"monsters {m.get('id')}: drop inexistente {d!r}")
+        model = m.get("model", "")
+        ref(bool(model) and model.replace("_", "").isalnum(),
+            f"monsters {m.get('id')}: model ausente o invalido {model!r}")
 
     for n in npcs.values():
         ref(n.get("zone") in zones, f"npcs {n.get('id')}: zona inexistente {n.get('zone')!r}")
