@@ -94,7 +94,7 @@ func play_sting(sting_name: String) -> void:
 		push_warning("[Audio] sting desconocido: " + sting_name)
 		return
 	var path: String = MUSIC_DIR + str(MUSIC[sting_name])
-	if not FileAccess.file_exists(path):
+	if not ResourceLoader.exists(path):
 		return
 	var stream = load(path)
 	if stream == null:
@@ -131,7 +131,7 @@ func _play_music_track(track_name: String) -> void:
 func _play(player: AudioStreamPlayer, path: String) -> void:
 	if muted:
 		return
-	if not FileAccess.file_exists(path):
+	if not ResourceLoader.exists(path):
 		return
 	var stream = load(path)
 	if stream == null:
@@ -156,10 +156,10 @@ func _ensure_bus(bus_name: String) -> void:
 func _check_files() -> void:
 	_missing.clear()
 	for f in MUSIC.values():
-		if not FileAccess.file_exists(MUSIC_DIR + str(f)):
+		if not ResourceLoader.exists(MUSIC_DIR + str(f)):
 			_missing.append(str(f))
 	for f in SFX.values():
-		if not FileAccess.file_exists(SFX_DIR + str(f)):
+		if not ResourceLoader.exists(SFX_DIR + str(f)):
 			_missing.append(str(f))
 	if not _missing.is_empty():
 		push_warning("[Audio] sin archivos (%d): ejecuta setup_audio.py. Juego en silencio." % _missing.size())

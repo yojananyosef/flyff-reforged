@@ -71,7 +71,8 @@ static var _ui_warned := false
 func ui_texture(filename: String):
 	## Textura UI del cliente o null (repliegue elegante sin setup).
 	var path := "res://textures/ui/" + filename
-	if not FileAccess.file_exists(path):
+	# ResourceLoader (no FileAccess): en exportados la textura va remapeada.
+	if not ResourceLoader.exists(path):
 		if not _ui_warned:
 			_ui_warned = true
 			push_warning("[GameData] sin texturas UI: ejecuta setup_ui_textures.py")

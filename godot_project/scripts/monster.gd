@@ -49,7 +49,8 @@ func _mount_model() -> void:
 	if model_name == "":
 		return
 	var path := "res://models/" + model_name + ".glb"
-	if not FileAccess.file_exists(path):
+	# ResourceLoader (no FileAccess): en exportados el .glb va remapeado.
+	if not ResourceLoader.exists(path):
 		return
 	var packed = load(path)
 	if not (packed is PackedScene):
