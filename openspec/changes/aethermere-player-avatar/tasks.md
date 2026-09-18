@@ -12,4 +12,4 @@
 
 - [x] 3.1 Captura in-game del avatar + SIM-QUEST PASS + prueba en navegador
 - [x] 3.2 `openspec validate aethermere-player-avatar --strict` OK
-- [ ] 3.3 Commit + push (+ rebuild web si afecta al .pck)
+- [x] 3.3 Commit + push (+ rebuild web si afecta al .pck)
