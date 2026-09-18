@@ -14,4 +14,4 @@
 
 - [x] 3.1 Capturas (suelo pintado continuo, costa con agua, hierba) + SIM-QUEST PASS + prueba en navegador
 - [x] 3.2 `openspec validate aethermere-terrain-color --strict` OK
-- [ ] 3.3 Commit + push (+ rebuild web y deploy a gh-pages)
+- [x] 3.3 Commit + push (+ rebuild web y deploy a gh-pages)
