@@ -37,6 +37,7 @@ SFX: dict[str, str] = {
     "ui_close": "InfClose.wav",
     "pickup": "InfGroundPickup.wav",
     "reward": "ItemDropDing.wav",
+    "heal": "ItemGnPotion.wav",
 }
 
 

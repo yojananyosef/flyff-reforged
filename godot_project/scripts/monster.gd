@@ -9,6 +9,7 @@ var level: int = 1
 var max_hp: float = 10.0
 var hp: float = 10.0
 var attack: float = 1.0
+var defense: float = 0.0
 var exp_value: float = 1.0
 var drops: Array = []
 
@@ -27,6 +28,7 @@ func setup(def: Dictionary) -> void:
 	max_hp = float(def.get("hp", 10))
 	hp = max_hp
 	attack = float(def.get("attack", 1))
+	defense = float(def.get("defense", 0))
 	exp_value = float(def.get("exp", 1))
 	drops = def.get("drops", [])
 
@@ -52,8 +54,8 @@ func _physics_process(delta: float) -> void:
 	if player != null and _touch_cooldown <= 0.0:
 		if global_position.distance_to(player.global_position) < 1.4:
 			_touch_cooldown = 1.0
-			if player.has_method("take_damage"):
-				player.take_damage(attack)
+			if player.has_method("take_mob_damage"):
+				player.take_mob_damage(attack)
 
 
 func take_damage(amount: float) -> void:

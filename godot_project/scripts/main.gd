@@ -117,7 +117,7 @@ func _run_sim() -> void:
 		"audio 16/16 presente (%s)" % str(audio.missing_files()))
 	for sfx_name in audio.known_sfx():
 		audio.play_sfx(sfx_name)
-	_check(true, "12 SFX emitidos sin error")
+	_check(true, "%d SFX emitidos sin error" % audio.known_sfx().size())
 	audio.notify_combat()
 	_check(audio._in_combat_music, "musica de combate activa tras agresion")
 	audio.toggle_mute()
@@ -162,10 +162,10 @@ func _run_sim() -> void:
 			break
 	_check(crow != null, "existe mon_004 en escena")
 	if crow != null:
-		var crow_hp0: float = crow.hp
 		player.global_position = crow.global_position + Vector3(1.0, 0.0, 0.0)
 		player.attack()
-		_check(crow.hp < crow_hp0, "golpe melee reduce HP (%.0f -> %.0f)" % [crow_hp0, crow.hp])
+		_check(is_equal_approx(crow.hp, 20.0),
+			"basico con formula: 25 - max(1,5-0) = 20 (%.0f)" % crow.hp)
 
 	var victim: Node3D = null
 	for m in get_tree().get_nodes_in_group("monsters"):
@@ -182,6 +182,44 @@ func _run_sim() -> void:
 		var prog1: Array = quest_mgr.progress("quest_102")
 		_check(prog1.size() == 2 and int(prog1[0]) == int(prog0[0]) + 1,
 			"muerte cuenta para quest_102 (%s)" % str(prog1))
+
+	# --- skills ---
+	_check(player.known_skills() == ["skill_001"], "nivel 1 solo conoce Ember")
+	_check(not player.cast_skill("skill_002"), "Bulwark bloqueado a nivel 1")
+	_check(not player.cast_skill("skill_999"), "skill inexistente se rechaza")
+	player.mp = 0.0
+	_check(player.skill_state("skill_001")[0] == "no_mana", "sin MP estado no_mana")
+	_check(not player.cast_skill("skill_001"), "sin MP no se castea")
+	player.mp = player.max_mp
+	player.level = 3
+	_check(player.known_skills().size() == 3, "nivel 3 conoce las 3 skills")
+
+	var hare: Node3D = null
+	for m in get_tree().get_nodes_in_group("monsters"):
+		if m.get("monster_id") == "mon_001" and m.hp >= 30.0:
+			hare = m
+			break
+	_check(hare != null, "existe liebre intacta para Ember")
+	if hare != null:
+		player.global_position = hare.global_position + Vector3(1.0, 0.0, 0.0)
+		var mp0: float = player.mp
+		_check(player.cast_skill("skill_001"), "Ember se lanza")
+		_check(is_equal_approx(hare.hp, 13.0),
+			"Ember con formula: 30 - max(1,5+12-0) = 13 (%.0f)" % hare.hp)
+		_check(is_equal_approx(player.mp, mp0 - 5.0), "Ember cuesta 5 MP")
+		_check(not player.cast_skill("skill_001"), "Ember en cooldown se rechaza")
+
+	_check(player.cast_skill("skill_002"), "Bulwark se activa")
+	_check(player.bulwark_time > 0.0, "buff Bulwark corriendo")
+	var php0: float = player.hp
+	player.take_mob_damage(10.0)
+	_check(absf(player.hp - (php0 - 4.5)) < 0.01,
+		"Bulwark mitiga: max(1,10-1)/2 = 4.5 (%.1f)" % (php0 - player.hp))
+
+	_check(player.cast_skill("skill_003"), "Bandage se lanza")
+	_check(absf(player.hp - minf(player.max_hp, php0 - 4.5 + 30.0)) < 0.01,
+		"Bandage cura 30%% del max (%.0f HP)" % player.hp)
+	_check(not player.cast_skill("skill_003"), "Bandage en cooldown se rechaza")
 
 	if _failures.is_empty():
 		print("SIM-QUEST PASS")
