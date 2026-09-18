@@ -62,6 +62,29 @@ flyff-reforged/
 MVP recortado: 1 zona (Ironhold), 1 clase, 10 misiones, 5 monstruos,
 combate básico, UI funcional.
 
+## Jugar en web (GitHub Pages)
+
+Juega sin instalar Godot: **https://yojananyosef.github.io/flyff-reforged/**
+
+> Si ves un 404, activa Pages una vez: repo → Settings → Pages →
+> Deploy from a branch → rama `gh-pages` → `/ (root)` → Save.
+
+Controles: **WASD** moverse, **Espacio** saltar, **E** hablar/comerciar,
+**clic** atacar, **1/2/3** consumibles, **F3** overlay diagnóstico,
+**F5** guardar, **F8** nueva partida. En web el guardado usa IndexedDB
+y la música empieza tras el primer clic (política del navegador).
+
+Regenerar el build:
+
+```bash
+python3 scripts/build_web.py --out web-dist
+```
+
+Requiere Godot 4.7 + templates (incl. `web_nothreads_release`).
+El script genera el preset Web con `thread_support=false` (Pages no
+envía COOP/COEP), exporta a `web-dist/` y limpia el staging
+(`godot_project/data/` y `export_presets.cfg` no se versionan).
+
 ## Requisitos
 
 - Python 3.10+

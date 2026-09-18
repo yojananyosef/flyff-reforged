@@ -20,6 +20,8 @@ godot_project/audio/
 godot_project/textures/
 # Modelos convertidos (setup_models.py, no versionar)
 godot_project/models/
+# Build web (build_web.py, se despliega a gh-pages)
+web-dist/
 
 # OS / editores
 .DS_Store
