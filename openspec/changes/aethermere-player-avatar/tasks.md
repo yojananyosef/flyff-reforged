@@ -13,7 +13,7 @@
 - [x] 3.1 Conjugado de cuaterniones en `o3d_to_skinglb.py` (giros espejados); clips con cuerpo completo (`AtkStand-15`, `AtkWalk-15`)
 - [x] 3.2 `player.gd` encara a la víctima al golpear (+ check en el sim)
 - [x] 3.3 SIM-QUEST PASS + capturas en navegador (reposo, marcha, ataque) + `validate --strict`
-- [ ] 3.4 Commit + push + rebuild web y deploy a gh-pages
+- [x] 3.4 Commit + push + rebuild web y deploy a gh-pages
 
 ## 4. Segunda revisión (causas reales)
 
