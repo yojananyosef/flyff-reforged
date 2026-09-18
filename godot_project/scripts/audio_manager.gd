@@ -96,8 +96,11 @@ func play_sting(sting_name: String) -> void:
 	var path: String = MUSIC_DIR + str(MUSIC[sting_name])
 	if not FileAccess.file_exists(path):
 		return
+	var stream = load(path)
+	if stream == null:
+		return
 	_music.stream_paused = true
-	_sting.stream = load(path)
+	_sting.stream = stream
 	_sting.play()
 
 
@@ -130,7 +133,10 @@ func _play(player: AudioStreamPlayer, path: String) -> void:
 		return
 	if not FileAccess.file_exists(path):
 		return
-	player.stream = load(path)
+	var stream = load(path)
+	if stream == null:
+		return
+	player.stream = stream
 	player.play()
 
 

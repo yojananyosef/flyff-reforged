@@ -346,6 +346,15 @@ func _run_sim() -> void:
 	_check(player.use_item("item_004"), "usar tonico con MP bajo")
 	_check(is_equal_approx(player.mp, 30.0), "tonico +20 MP (%.0f)" % player.mp)
 
+	# --- movimiento (regresion WASD) ---
+	var m0: Vector3 = player.global_position
+	Input.action_press("move_forward")
+	for i in 60:
+		await get_tree().physics_frame
+	Input.action_release("move_forward")
+	var moved: float = m0.distance_to(player.global_position)
+	_check(moved > 3.0, "WASD mueve al jugador (%.1f m en 1 s)" % moved)
+
 	if _failures.is_empty():
 		print("SIM-QUEST PASS")
 		get_tree().quit(0)
