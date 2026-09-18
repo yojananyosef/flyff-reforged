@@ -7,6 +7,8 @@ extends CanvasLayer
 var _inventory_open := false
 var _inventory_seen_version := -1
 var _skill_slots: Dictionary = {}  # skill_id -> {"bar": .., "name": .., "key": ..}
+var _debug_on := false
+var _debug_label: Label
 
 const SHOP_STOCK := ["item_003", "item_004", "item_001", "item_002"]
 var shop_open := false
@@ -43,6 +45,16 @@ func _ready() -> void:
 	inventory_panel.visible = false
 	_build_skill_bar(game_data)
 	_build_shop_panel()
+	_debug_label = Label.new()
+	_debug_label.name = "DebugLabel"
+	_debug_label.anchor_left = 1.0
+	_debug_label.anchor_right = 1.0
+	_debug_label.offset_left = -330.0
+	_debug_label.offset_right = -10.0
+	_debug_label.offset_top = 320.0
+	_debug_label.offset_bottom = 480.0
+	_debug_label.visible = false
+	add_child(_debug_label)
 	equip_button.pressed.connect(_on_equip_pressed)
 	unequip_button.pressed.connect(_on_unequip_pressed)
 	use_button.pressed.connect(_on_use_pressed)
@@ -59,6 +71,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				audio.play_sfx("ui_open" if _inventory_open else "ui_close")
 			if _inventory_open:
 				_rebuild_inventory()
+		elif event.physical_keycode == KEY_F3:
+			_debug_on = not _debug_on
+			_debug_label.visible = _debug_on
 
 
 func _process(_delta: float) -> void:
@@ -71,6 +86,7 @@ func _process(_delta: float) -> void:
 	_sync_bar(exp_bar, exp_label, p.exp, p.max_exp)
 	_sync_quest()
 	_sync_skills(p)
+	_sync_debug(p)
 	if p.use_cooldown > 0.0:
 		use_button.disabled = true
 		use_button.text = "Usar (%.0fs)" % p.use_cooldown
@@ -367,3 +383,20 @@ func _sync_skills(p) -> void:
 		elif sid == "skill_002" and p.bulwark_time > 0.0:
 			txt += " (ACTIVO)"
 		label.text = txt
+
+
+func _sync_debug(p) -> void:
+	if not _debug_on:
+		return
+	var mouse_name := "visible"
+	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		mouse_name = "capturado"
+	elif Input.mouse_mode == Input.MOUSE_MODE_CONFINED:
+		mouse_name = "confinado"
+	_debug_label.text = "FPS %d\nmouse: %s\nWASD: %.1f %.1f %.1f %.1f\nsalto: %.1f\nvel: %s\npos: %s\nsuelo: %s" % [
+		Engine.get_frames_per_second(), mouse_name,
+		Input.get_action_strength("move_forward"), Input.get_action_strength("move_back"),
+		Input.get_action_strength("move_left"), Input.get_action_strength("move_right"),
+		Input.get_action_strength("jump"),
+		str(Vector2(p.velocity.x, p.velocity.z)), str(p.global_position),
+		str(p.is_on_floor())]
