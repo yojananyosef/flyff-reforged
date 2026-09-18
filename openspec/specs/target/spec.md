@@ -7,22 +7,22 @@ de golpear siempre "al más cercano" a ciegas.
 
 ### Requirement: Fijar objetivo con clic
 
-Con el ratón capturado, el clic SHALL lanzar un rayo desde el centro de
-la pantalla (punto de mira) hasta 100 m; con el ratón libre (sin
-pointer-lock) SHALL usar la posición del cursor. Si impacta un monstruo,
-SHALL fijarlo como objetivo. Los clics con inventario/tienda/diálogo
-abiertos son de la UI y no llegan al mundo. Si además está en rango de
-ataque, SHALL golpearlo; si no, solo lo fija y avisa en consola. Clic sin impacto conserva el objetivo y
-aplica el ataque clásico al más cercano.
+Con el cursor libre, el clic SHALL lanzar el rayo desde la posición del
+cursor hasta 100 m; si impacta un monstruo, SHALL fijarlo como objetivo. La
+cruz central se oculta (ya no es el punto de mira). Los clics con
+inventario/tienda/diálogo abiertos son de la UI y no llegan al mundo. Si
+además está en rango de ataque, SHALL golpearlo; si no, solo lo fija y
+avisa en consola. Clic sin impacto conserva el objetivo y aplica el ataque
+clásico al más cercano.
 
 #### Scenario: Fijar y golpear
 
-- **WHEN** se hace clic con un monstruo en el punto de mira a 2 m
+- **WHEN** se hace clic sobre un monstruo a 2 m
 - **THEN** queda fijado y recibe el daño del básico
 
 #### Scenario: Fijar lejos
 
-- **WHEN** se hace clic con un monstruo en el punto de mira a 30 m
+- **WHEN** se hace clic sobre un monstruo a 30 m
 - **THEN** queda fijado pero no recibe daño
 
 ### Requirement: Priorizar objetivo en ataques
@@ -42,10 +42,10 @@ SHALL limpiarse solo.
 - **WHEN** el objetivo muere y se libera
 - **THEN** el jugador lo limpia en el siguiente frame físico
 
-### Requirement: HUD de objetivo y punto de mira
+### Requirement: HUD de objetivo
 
-El HUD SHALL mostrar un punto de mira en el centro y una etiqueta con el
-nombre y HP del objetivo (`Objetivo: -` si no hay).
+El HUD SHALL mostrar una etiqueta con el nombre y HP del objetivo
+(`Objetivo: -` si no hay). No hay punto de mira central (cursor libre).
 
 #### Scenario: Etiqueta
 
