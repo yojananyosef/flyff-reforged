@@ -26,7 +26,11 @@ func _ready() -> void:
 	var audio = get_node_or_null("/root/AudioManager")
 	if audio != null:
 		audio.play_zone_music()
-	if "--sim-quest" in OS.get_cmdline_user_args():
+	var save_mgr = get_node_or_null("/root/SaveManager")
+	var sim_mode := "--sim-quest" in OS.get_cmdline_user_args()
+	if save_mgr != null and not sim_mode and save_mgr.has_save():
+		save_mgr.load_game()
+	if sim_mode:
 		_run_sim.call_deferred()
 	if "--shot" in OS.get_cmdline_user_args():
 		_take_shot.call_deferred()
@@ -43,6 +47,14 @@ func _unhandled_input(event: InputEvent) -> void:
 				var npc = nearest_npc()
 				if npc != null:
 					dialogue.open(str(npc.get_meta("npc_id")))
+		elif event.physical_keycode == KEY_F5:
+			var save_mgr = get_node_or_null("/root/SaveManager")
+			if save_mgr != null:
+				save_mgr.save_game()
+		elif event.physical_keycode == KEY_F8:
+			var save_mgr8 = get_node_or_null("/root/SaveManager")
+			if save_mgr8 != null:
+				save_mgr8.new_game()
 
 
 func npc_setup() -> void:
@@ -301,6 +313,19 @@ func _run_sim() -> void:
 	_check(quest_mgr.done.size() == 10, "10/10 misiones completadas")
 	_check(quest_mgr.available_quests().is_empty(), "sin misiones pendientes")
 	_check(player.level >= 5, "nivel >= 5 al cierre (es %d)" % player.level)
+
+	# --- guardado ---
+	var save_mgr = get_node("/root/SaveManager")
+	_check(save_mgr.save_game(), "guardar partida")
+	var gold_s: int = player.gold
+	var done_s: int = quest_mgr.done.size()
+	player.gold = 0
+	quest_mgr.reset()
+	_check(quest_mgr.done.is_empty(), "reset vacia misiones")
+	_check(save_mgr.load_game(), "cargar partida")
+	_check(player.gold == gold_s, "oro restaurado (%d)" % player.gold)
+	_check(quest_mgr.done.size() == done_s, "misiones restauradas (%d)" % done_s)
+	_check(int(player.inventory.get("item_003", 0)) > 0, "inventario restaurado")
 
 	if _failures.is_empty():
 		print("SIM-QUEST PASS")

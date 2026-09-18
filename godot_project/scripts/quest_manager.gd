@@ -87,6 +87,12 @@ func first_active() -> String:
 	return str(active.keys()[0])
 
 
+func reset() -> void:
+	active.clear()
+	done.clear()
+	quest_updated.emit()
+
+
 func _complete(quest_id: String) -> void:
 	var game_data: Node = get_node("/root/GameData")
 	var q: Dictionary = game_data.quests[quest_id]
@@ -102,3 +108,6 @@ func _complete(quest_id: String) -> void:
 	if audio != null:
 		audio.play_sfx("reward")
 		audio.play_sting("sting_quest")
+	var save_mgr = get_node_or_null("/root/SaveManager")
+	if save_mgr != null:
+		save_mgr.save_game()
