@@ -12,12 +12,14 @@ var current_node: String = ""
 @onready var text_label: Label = $Panel/TextLabel
 @onready var options_box: VBoxContainer = $Panel/OptionsBox
 @onready var accept_button: Button = $Panel/AcceptButton
+@onready var trade_button: Button = $Panel/TradeButton
 @onready var close_button: Button = $Panel/CloseButton
 
 
 func _ready() -> void:
 	visible = false
 	accept_button.pressed.connect(_on_accept)
+	trade_button.pressed.connect(_on_trade)
 	close_button.pressed.connect(close)
 
 
@@ -35,6 +37,7 @@ func open(p_npc_id: String) -> void:
 	npc_id = p_npc_id
 	dialogue_id = str(npc.get("dialogue_id", ""))
 	speaker_label.text = str(npc.get("name", npc_id))
+	trade_button.visible = str(npc.get("role", "")) == "merchant"
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var audio = get_node_or_null("/root/AudioManager")
@@ -109,3 +112,10 @@ func _on_accept() -> void:
 		return
 	if quest_mgr.accept_quest(str(avail[0])):
 		_refresh_accept(get_node("/root/GameData"))
+
+
+func _on_trade() -> void:
+	var hud = get_tree().get_first_node_in_group("hud")
+	close()
+	if hud != null and hud.has_method("open_shop"):
+		hud.open_shop()

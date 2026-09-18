@@ -8,6 +8,17 @@ var _inventory_open := false
 var _inventory_seen_version := -1
 var _skill_slots: Dictionary = {}  # skill_id -> {"bar": .., "name": .., "key": ..}
 
+const SHOP_STOCK := ["item_003", "item_004", "item_001", "item_002"]
+var shop_open := false
+var _inv_ids: Array = []
+var _sell_ids: Array = []
+var _shop_panel: Control
+var _buy_list: ItemList
+var _sell_list: ItemList
+var _shop_gold: Label
+
+@onready var title_label: Label = $InventoryPanel/Title
+
 @onready var hp_bar: ProgressBar = $Panel/HPBar
 @onready var hp_label: Label = $Panel/HPLabel
 @onready var mp_bar: ProgressBar = $Panel/MPBar
@@ -18,6 +29,9 @@ var _skill_slots: Dictionary = {}  # skill_id -> {"bar": .., "name": .., "key": 
 @onready var quest_label: Label = $Panel/QuestLabel
 @onready var inventory_panel: Control = $InventoryPanel
 @onready var inventory_list: ItemList = $InventoryPanel/InventoryList
+@onready var equip_button: Button = $InventoryPanel/EquipButton
+@onready var unequip_button: Button = $InventoryPanel/UnequipButton
+@onready var equipped_label: Label = $InventoryPanel/EquippedLabel
 
 
 func _ready() -> void:
@@ -27,6 +41,9 @@ func _ready() -> void:
 		print("[HUD] zona mostrada: " + zone_label.text)
 	inventory_panel.visible = false
 	_build_skill_bar(game_data)
+	_build_shop_panel()
+	equip_button.pressed.connect(_on_equip_pressed)
+	unequip_button.pressed.connect(_on_unequip_pressed)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -88,13 +105,190 @@ func _rebuild_inventory() -> void:
 	var p = players[0]
 	var game_data := get_node_or_null("/root/GameData")
 	inventory_list.clear()
+	_inv_ids.clear()
 	for item_id in p.inventory.keys():
 		var count: int = p.inventory[item_id]
+		var label := _equip_tag(p, str(item_id))
 		var name := str(item_id)
 		if game_data != null:
 			name = game_data.get_item_name(str(item_id))
-		inventory_list.add_item("%s x%d" % [name, count])
+		inventory_list.add_item("%s x%d%s" % [name, count, label])
+		_inv_ids.append(str(item_id))
+	title_label.text = "Inventario (I) · Oro: %d" % p.gold
+	equipped_label.text = "Arma: %s · Armadura: %s" % [
+		_equipped_name(game_data, p, "weapon"), _equipped_name(game_data, p, "armor")]
 	_inventory_seen_version = p.inventory_version
+
+
+func _equip_tag(p, item_id: String) -> String:
+	if str(p.equipment.get("weapon", "")) == item_id:
+		return " [PUESTA]"
+	if str(p.equipment.get("armor", "")) == item_id:
+		return " [PUESTO]"
+	return ""
+
+
+func _equipped_name(game_data, p, slot: String) -> String:
+	var id := str(p.equipment.get(slot, ""))
+	if id == "":
+		return "-"
+	if game_data != null:
+		return game_data.get_item_name(id)
+	return id
+
+
+func _on_equip_pressed() -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	if players.is_empty() or inventory_list.get_selected_items().is_empty():
+		return
+	var p = players[0]
+	if p.equip(_inv_ids[inventory_list.get_selected_items()[0]]):
+		_rebuild_inventory()
+
+
+func _on_unequip_pressed() -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	if players.is_empty():
+		return
+	var p = players[0]
+	if str(p.equipment.get("weapon", "")) != "":
+		p.unequip("weapon")
+	elif str(p.equipment.get("armor", "")) != "":
+		p.unequip("armor")
+	_rebuild_inventory()
+
+
+# --- Tienda ---
+
+func is_shop_open() -> bool:
+	return shop_open
+
+
+func open_shop() -> void:
+	shop_open = true
+	_shop_panel.visible = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_refresh_shop()
+
+
+func close_shop() -> void:
+	shop_open = false
+	_shop_panel.visible = false
+	if not _inventory_open:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _build_shop_panel() -> void:
+	var panel := Control.new()
+	panel.name = "ShopPanel"
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -260.0
+	panel.offset_top = -160.0
+	panel.offset_right = 260.0
+	panel.offset_bottom = 160.0
+	panel.visible = false
+	add_child(panel)
+	_shop_panel = panel
+	var bg := ColorRect.new()
+	bg.color = Color(0.06, 0.05, 0.03, 0.97)
+	bg.anchor_right = 1.0
+	bg.anchor_bottom = 1.0
+	panel.add_child(bg)
+	_shop_gold = _shop_label(panel, "Oro: 0", 12, 8, 508, 30)
+	_shop_label(panel, "Comprar", 12, 34, 250, 54)
+	_shop_label(panel, "Vender (mitad)", 262, 34, 508, 54)
+	_buy_list = _shop_list(panel, 12, 58, 238, 250)
+	_sell_list = _shop_list(panel, 262, 58, 508, 250)
+	var buy_btn := Button.new()
+	buy_btn.text = "Comprar"
+	buy_btn.offset_left = 12.0
+	buy_btn.offset_top = 256.0
+	buy_btn.offset_right = 238.0
+	buy_btn.offset_bottom = 286.0
+	buy_btn.pressed.connect(_on_buy_pressed)
+	panel.add_child(buy_btn)
+	var sell_btn := Button.new()
+	sell_btn.text = "Vender"
+	sell_btn.offset_left = 262.0
+	sell_btn.offset_top = 256.0
+	sell_btn.offset_right = 508.0
+	sell_btn.offset_bottom = 286.0
+	sell_btn.pressed.connect(_on_sell_pressed)
+	panel.add_child(sell_btn)
+	print("[HUD] tienda construida (%d stock)" % SHOP_STOCK.size())
+
+
+func _shop_label(panel: Control, text: String, x0: float, y0: float, x1: float, y1: float) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.offset_left = x0
+	l.offset_top = y0
+	l.offset_right = x1
+	l.offset_bottom = y1
+	panel.add_child(l)
+	return l
+
+
+func _shop_list(panel: Control, x0: float, y0: float, x1: float, y1: float) -> ItemList:
+	var l := ItemList.new()
+	l.offset_left = x0
+	l.offset_top = y0
+	l.offset_right = x1
+	l.offset_bottom = y1
+	panel.add_child(l)
+	return l
+
+
+func _refresh_shop() -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	if players.is_empty():
+		return
+	var p = players[0]
+	var game_data := get_node_or_null("/root/GameData")
+	_shop_gold.text = "Pell Bryn · Oro: %d" % p.gold
+	_buy_list.clear()
+	for item_id in SHOP_STOCK:
+		var price := 0
+		var name := str(item_id)
+		if game_data != null:
+			price = int(game_data.items.get(item_id, {}).get("price", 0))
+			name = game_data.get_item_name(str(item_id))
+		_buy_list.add_item("%s — %d" % [name, price])
+	_sell_list.clear()
+	_sell_ids.clear()
+	for item_id in p.inventory.keys():
+		var def: Dictionary = p.item_def(str(item_id))
+		if str(def.get("type", "")) == "quest":
+			continue
+		var name := str(item_id)
+		if game_data != null:
+			name = game_data.get_item_name(str(item_id))
+		_sell_list.add_item("%s x%d — %d" % [name, int(p.inventory[item_id]),
+			maxi(1, int(def.get("price", 0)) / 2)])
+		_sell_ids.append(str(item_id))
+
+
+func _on_buy_pressed() -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	if players.is_empty() or _buy_list.get_selected_items().is_empty():
+		return
+	var p = players[0]
+	if p.buy(SHOP_STOCK[_buy_list.get_selected_items()[0]]):
+		_refresh_shop()
+		_rebuild_inventory()
+
+
+func _on_sell_pressed() -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	if players.is_empty() or _sell_list.get_selected_items().is_empty():
+		return
+	var p = players[0]
+	if p.sell(_sell_ids[_sell_list.get_selected_items()[0]]):
+		_refresh_shop()
+		_rebuild_inventory()
 
 
 func _build_skill_bar(game_data) -> void:

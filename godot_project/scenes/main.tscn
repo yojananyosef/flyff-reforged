@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/player.gd" id="2"]
@@ -45,6 +45,14 @@ height = 1.6
 [sub_resource type="BoxShape3D" id="npc_shape"]
 size = Vector3(1, 2, 1)
 
+[sub_resource type="StandardMaterial3D" id="npc2_mat"]
+albedo_color = Color(0.85, 0.6, 0.25, 1)
+
+[sub_resource type="CapsuleMesh" id="npc2_mesh"]
+material = SubResource("npc2_mat")
+radius = 0.4
+height = 1.6
+
 [node name="Main" type="Node3D"]
 script = ExtResource("1")
 
@@ -85,7 +93,7 @@ spring_length = 5.0
 [node name="Camera3D" type="Camera3D" parent="Player/CamPivot/SpringArm3D"]
 current = true
 
-[node name="NPC" type="StaticBody3D" parent="."]
+[node name="NPC" type="StaticBody3D" parent="." groups=["npcs"]]
 position = Vector3(4, 0, -2)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="NPC"]
@@ -102,7 +110,24 @@ billboard = 1
 font_size = 48
 text = "Elder Maren Vell"
 
-[node name="HUD" type="CanvasLayer" parent="."]
+[node name="NPC2" type="StaticBody3D" parent="." groups=["npcs"]]
+position = Vector3(-4, 0, 2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NPC2"]
+position = Vector3(0, 1, 0)
+shape = SubResource("npc_shape")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="NPC2"]
+position = Vector3(0, 0.9, 0)
+mesh = SubResource("npc2_mesh")
+
+[node name="NameLabel" type="Label3D" parent="NPC2"]
+position = Vector3(0, 2.3, 0)
+billboard = 1
+font_size = 48
+text = "Scout Pell Bryn"
+
+[node name="HUD" type="CanvasLayer" parent="." groups=["hud"]]
 script = ExtResource("3")
 
 [node name="Panel" type="Control" parent="HUD"]
@@ -201,7 +226,29 @@ text = "Inventario (I)"
 offset_left = 10.0
 offset_top = 32.0
 offset_right = 310.0
-offset_bottom = 280.0
+offset_bottom = 200.0
+
+[node name="EquipButton" type="Button" parent="HUD/InventoryPanel"]
+offset_left = 10.0
+offset_top = 206.0
+offset_right = 150.0
+offset_bottom = 236.0
+text = "Equipar"
+
+[node name="UnequipButton" type="Button" parent="HUD/InventoryPanel"]
+offset_left = 160.0
+offset_top = 206.0
+offset_right = 310.0
+offset_bottom = 236.0
+text = "Desequipar"
+
+[node name="EquippedLabel" type="Label" parent="HUD/InventoryPanel"]
+offset_left = 10.0
+offset_top = 240.0
+offset_right = 310.0
+offset_bottom = 284.0
+text = "Arma: - · Armadura: -"
+autowrap_mode = 2
 
 [node name="DialogueLayer" type="CanvasLayer" parent="."]
 visible = false
@@ -242,7 +289,7 @@ autowrap_mode = 2
 offset_left = 16.0
 offset_top = 118.0
 offset_right = 504.0
-offset_bottom = 208.0
+offset_bottom = 170.0
 
 [node name="AcceptButton" type="Button" parent="DialogueLayer/Panel"]
 visible = false
@@ -251,6 +298,14 @@ offset_top = 214.0
 offset_right = 250.0
 offset_bottom = 248.0
 text = "Aceptar misión"
+
+[node name="TradeButton" type="Button" parent="DialogueLayer/Panel"]
+visible = false
+offset_left = 16.0
+offset_top = 176.0
+offset_right = 504.0
+offset_bottom = 206.0
+text = "Comerciar"
 
 [node name="CloseButton" type="Button" parent="DialogueLayer/Panel"]
 offset_left = 266.0

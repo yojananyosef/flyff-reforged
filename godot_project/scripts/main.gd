@@ -8,9 +8,9 @@ const MonsterScript := preload("res://scripts/monster.gd")
 
 var _failures: Array[String] = []
 
-@onready var player: CharacterBody3D = $Player
-@onready var npc: StaticBody3D = $NPC
-@onready var dialogue: CanvasLayer = $DialogueLayer
+@onready var player = $Player
+@onready var dialogue = $DialogueLayer
+@onready var hud = $HUD
 
 
 func _ready() -> void:
@@ -21,7 +21,7 @@ func _ready() -> void:
 	print("[Main] arranque OK. Zona: %s (%s)" % [game_data.current_zone_id, game_data.get_zone_display_name()])
 	if game_data.current_zone_id != "ironhold":
 		push_warning("[Main] zona actual no es 'ironhold': " + str(game_data.current_zone_id))
-	npc.set_meta("npc_id", "npc_001")
+	npc_setup()
 	_spawn_monsters(game_data)
 	var audio = get_node_or_null("/root/AudioManager")
 	if audio != null:
@@ -35,8 +35,28 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.physical_keycode == KEY_E:
 			if dialogue.is_open():
 				dialogue.close()
-			elif player.global_position.distance_to(npc.global_position) < 3.5:
-				dialogue.open(str(npc.get_meta("npc_id")))
+			elif hud.is_shop_open():
+				hud.close_shop()
+			else:
+				var npc = nearest_npc()
+				if npc != null:
+					dialogue.open(str(npc.get_meta("npc_id")))
+
+
+func npc_setup() -> void:
+	$NPC.set_meta("npc_id", "npc_001")
+	$NPC2.set_meta("npc_id", "npc_002")
+
+
+func nearest_npc():
+	var best = null
+	var best_d := 3.5
+	for n in get_tree().get_nodes_in_group("npcs"):
+		var d: float = player.global_position.distance_to(n.global_position)
+		if d < best_d:
+			best_d = d
+			best = n
+	return best
 
 
 func _spawn_monsters(game_data: Node) -> void:
@@ -220,6 +240,48 @@ func _run_sim() -> void:
 	_check(absf(player.hp - minf(player.max_hp, php0 - 4.5 + 30.0)) < 0.01,
 		"Bandage cura 30%% del max (%.0f HP)" % player.hp)
 	_check(not player.cast_skill("skill_003"), "Bandage en cooldown se rechaza")
+
+	# --- tienda y equipo ---
+	var gold0: int = player.gold
+	_check(gold0 >= 30, "oro inicial + botin >= 30 (%d)" % gold0)
+	var bread: int = int(player.inventory.get("item_003", 0))
+	_check(player.buy("item_003"), "comprar pan")
+	_check(player.gold == gold0 - 4, "pan cuesta 4 (%d)" % player.gold)
+	_check(int(player.inventory.get("item_003", 0)) == bread + 1, "pan en inventario")
+	player.gold = 3
+	_check(not player.buy("item_002"), "sin oro no hay compra")
+	_check(not player.buy("item_XXX"), "item inexistente se rechaza")
+	player.gold = gold0 - 4
+
+	_check(player.sell("item_006"), "vender cuero de jabali")
+	_check(player.gold == gold0 - 4 + 2, "venta a mitad: 5/2 = 2 (%d)" % player.gold)
+	_check(not player.sell("item_010"), "objeto de mision no vendible")
+	_check(not player.sell("item_XXX"), "vender inexistente se rechaza")
+
+	_check(player.equip("item_001"), "equipar espada")
+	_check(is_equal_approx(player.attack_stat(), 8.0), "ataque 5+3 = 8")
+	_check(not player.sell("item_001"), "equipada no vendible")
+	_check(player.equip("item_002"), "equipar tunica")
+	_check(is_equal_approx(player.defense_stat(), 3.0), "defensa 1+2 = 3")
+	_check(player.unequip("weapon"), "desequipar arma")
+	_check(is_equal_approx(player.attack_stat(), 5.0), "ataque vuelve a 5")
+	_check(player.equip("item_001"), "reequipar espada para cazar")
+
+	# Pell: dialogo de mercader con boton Comerciar
+	player.global_position = Vector3(-4, 0.5, 2)
+	var near = nearest_npc()
+	_check(near != null and str(near.get_meta("npc_id")) == "npc_002",
+		"E junto a Pell lo elige")
+	dialogue.open("npc_002")
+	_check(dialogue.trade_button.visible, "mercader muestra Comerciar")
+	dialogue.close()
+	dialogue.open("npc_001")
+	_check(not dialogue.trade_button.visible, "Maren no muestra Comerciar")
+	dialogue.close()
+	hud.open_shop()
+	_check(hud.is_shop_open(), "tienda se abre")
+	hud.close_shop()
+	_check(not hud.is_shop_open(), "tienda se cierra")
 
 	if _failures.is_empty():
 		print("SIM-QUEST PASS")

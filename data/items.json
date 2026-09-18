@@ -5,6 +5,7 @@
     "type": "weapon",
     "level_required": 1,
     "price": 25,
+    "attack_bonus": 3,
     "description": "Short iron sword issued to Ironhold recruits."
   },
   {
@@ -13,6 +14,7 @@
     "type": "armor",
     "level_required": 1,
     "price": 20,
+    "defense_bonus": 2,
     "description": "Padded tunic stitched in the Ironhold barracks."
   },
   {

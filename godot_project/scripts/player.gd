@@ -30,6 +30,8 @@ var max_exp: float = 100.0
 
 var inventory: Dictionary = {"item_001": 1, "item_002": 1, "item_003": 3}
 var inventory_version: int = 0
+var gold: int = 30
+var equipment: Dictionary = {"weapon": "", "armor": ""}
 
 var cooldown_left: Dictionary = {"skill_001": 0.0, "skill_002": 0.0, "skill_003": 0.0}
 var bulwark_time: float = 0.0
@@ -111,7 +113,7 @@ func attack() -> void:
 	_audio().play_sfx("swing")
 	var best: Node3D = _nearest_monster(attack_range)
 	if best != null and best.has_method("take_damage"):
-		var dmg := phys_damage(base_attack, 0.0, best.get("defense"))
+		var dmg := phys_damage(attack_stat(), 0.0, best.get("defense"))
 		best.take_damage(dmg)
 		_audio().play_sfx("hit")
 		_audio().notify_combat()
@@ -131,7 +133,7 @@ func take_damage(amount: float) -> void:
 
 func take_mob_damage(mob_attack: float) -> void:
 	## Dano de monstruo con formula + Bulwark.
-	var dmg := phys_damage(mob_attack, 0.0, base_defense)
+	var dmg := phys_damage(mob_attack, 0.0, defense_stat())
 	if bulwark_time > 0.0:
 		dmg *= 0.5
 	hp = clampf(hp - dmg, 0.0, max_hp)
@@ -165,6 +167,98 @@ func add_exp(amount: float) -> void:
 func add_item(item_id: String, count: int = 1) -> void:
 	inventory[item_id] = int(inventory.get(item_id, 0)) + count
 	inventory_version += 1
+
+
+func add_gold(amount: int) -> void:
+	gold = maxi(0, gold + amount)
+
+
+func item_def(item_id: String) -> Dictionary:
+	var game_data = get_node_or_null("/root/GameData")
+	if game_data == null:
+		return {}
+	return game_data.items.get(item_id, {})
+
+
+func attack_stat() -> float:
+	var bonus := 0.0
+	var w := str(equipment.get("weapon", ""))
+	if w != "":
+		bonus = float(item_def(w).get("attack_bonus", 0))
+	return base_attack + bonus
+
+
+func defense_stat() -> float:
+	var bonus := 0.0
+	var a := str(equipment.get("armor", ""))
+	if a != "":
+		bonus = float(item_def(a).get("defense_bonus", 0))
+	return base_defense + bonus
+
+
+func buy(item_id: String) -> bool:
+	var def := item_def(item_id)
+	if def.is_empty():
+		return false
+	var price := int(def.get("price", 0))
+	if price <= 0 or gold < price:
+		return false
+	gold -= price
+	add_item(item_id, 1)
+	_audio().play_sfx("reward")
+	print("[Shop] comprado %s por %d (oro %d)" % [item_id, price, gold])
+	return true
+
+
+func sell(item_id: String) -> bool:
+	var def := item_def(item_id)
+	if def.is_empty() or str(def.get("type", "")) == "quest":
+		return false
+	if int(inventory.get(item_id, 0)) <= 0:
+		return false
+	if equipment.get("weapon") == item_id or equipment.get("armor") == item_id:
+		return false
+	inventory[item_id] = int(inventory[item_id]) - 1
+	if int(inventory[item_id]) <= 0:
+		inventory.erase(item_id)
+	gold += maxi(1, int(def.get("price", 0)) / 2)
+	inventory_version += 1
+	_audio().play_sfx("ui_click")
+	print("[Shop] vendido %s (oro %d)" % [item_id, gold])
+	return true
+
+
+func equip(item_id: String) -> bool:
+	var def := item_def(item_id)
+	var slot := ""
+	if str(def.get("type", "")) == "weapon":
+		slot = "weapon"
+	elif str(def.get("type", "")) == "armor":
+		slot = "armor"
+	else:
+		return false
+	if int(inventory.get(item_id, 0)) <= 0:
+		return false
+	unequip(slot)
+	inventory[item_id] = int(inventory[item_id]) - 1
+	if int(inventory[item_id]) <= 0:
+		inventory.erase(item_id)
+	equipment[slot] = item_id
+	inventory_version += 1
+	_audio().play_sfx("ui_click")
+	print("[Equipo] %s en %s" % [item_id, slot])
+	return true
+
+
+func unequip(slot: String) -> bool:
+	var current := str(equipment.get(slot, ""))
+	if current == "":
+		return false
+	equipment[slot] = ""
+	add_item(current, 1)
+	_audio().play_sfx("ui_click")
+	print("[Equipo] %s desequipado" % current)
+	return true
 
 
 func _respawn() -> void:
@@ -231,7 +325,7 @@ func cast_skill(skill_id: String) -> bool:
 			return false  # whiff: no consume nada
 		mp -= cost
 		cooldown_left[skill_id] = skill_cooldown_max(skill_id)
-		var dmg := phys_damage(base_attack, float(def.get("power", 0)) + EMBER_POWER_BONUS,
+		var dmg := phys_damage(attack_stat(), float(def.get("power", 0)) + EMBER_POWER_BONUS,
 			target.get("defense"))
 		target.take_damage(dmg)
 		_audio().play_sfx("swing")

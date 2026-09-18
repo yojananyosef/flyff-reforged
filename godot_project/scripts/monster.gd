@@ -77,6 +77,8 @@ func _die() -> void:
 	if player != null:
 		if player.has_method("add_exp"):
 			player.add_exp(exp_value)
+		if player.has_method("add_gold"):
+			player.add_gold(int(level) * 2)
 		if player.has_method("add_item"):
 			for drop in drops:
 				player.add_item(str(drop), 1)
