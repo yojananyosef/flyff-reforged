@@ -91,7 +91,9 @@ func _load_terrain() -> void:
 	var step: float = float(spec.get("tile_size", 128.0)) / 128.0
 	var ox: float = spec.get("origin", [0, 0])[0]
 	var oz: float = spec.get("origin", [0, 0])[1]
-	_terrain = {"n": n, "step": step, "ox": ox, "oz": oz, "hs": hs}
+	_terrain = {"n": n, "step": step, "ox": ox, "oz": oz, "hs": hs,
+		"tiles": spec.get("tiles", []), "grass": spec.get("grass", []),
+		"trees": spec.get("trees", [])}
 	var packed = null
 	if ResourceLoader.exists(gpath):
 		packed = load(gpath)
@@ -100,7 +102,8 @@ func _load_terrain() -> void:
 		inst.name = "TerrainMesh"
 		add_child(inst)
 	else:
-		add_child(_build_terrain_mesh(n, step, ox, oz, hs))
+		add_child(_build_terrain_mesh(n, step, ox, oz, hs,
+			_terrain["tiles"]))
 	var body := StaticBody3D.new()
 	body.name = "TerrainBody"
 	body.position = Vector3(ox + (n - 1) * step / 2.0, 0.0, oz + (n - 1) * step / 2.0)
@@ -115,17 +118,163 @@ func _load_terrain() -> void:
 	$Ground.visible = false
 	$Ground.get_node("CollisionShape3D").set_deferred("disabled", true)
 	print("[Terreno] malla %dx%d + HeightMap (origen %.0f, %.0f)" % [n, n, ox, oz])
+	_add_water(n, step, ox, oz, float(spec.get("water_y", 0.05)))
+	_scatter_vegetation(spec)
 
 
-func _build_terrain_mesh(n: int, step: float, ox: float, oz: float, hs: Array) -> MeshInstance3D:
+func _add_water(n: int, step: float, ox: float, oz: float,
+		water_y: float) -> void:
+	## Lamina a la cota del spec (y=-14 en Ironhold: el campamento queda
+	## seco y se encharcan las hoyas). El depth test la oculta bajo el
+	## relieve emergido.
+	var size := (n - 1) * step
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(size, size)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.25, 0.55, 0.75, 0.6)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.roughness = 0.15
+	plane.material = mat
+	var inst := MeshInstance3D.new()
+	inst.name = "Water"
+	inst.mesh = plane
+	inst.position = Vector3(ox + size / 2.0, water_y, oz + size / 2.0)
+	add_child(inst)
+
+
+func _scatter_vegetation(spec: Dictionary) -> void:
+	## Hierba y arboles horneados por setup_terrain.py (verde pintado,
+	## determinista). Sin puestos no crea nada (repliegue).
+	var grass: Array = spec.get("grass", [])
+	var trees: Array = spec.get("trees", [])
+	if grass.is_empty() and trees.is_empty():
+		return
+	if not grass.is_empty():
+		add_child(_multimesh(grass, _grass_mesh(), "Grass"))
+	if not trees.is_empty():
+		var xforms := _veg_transforms(trees)
+		add_child(_multimesh_builder(xforms, _trunk_mesh(), "TreeTrunks",
+			Vector3(0, 0.5, 0)))
+		add_child(_multimesh_builder(xforms, _canopy_mesh(),
+			"TreeCanopies", Vector3(0, 1.6, 0)))
+	print("[Vegetacion] %d hierbas, %d arboles" % [grass.size(), trees.size()])
+
+
+func _veg_transforms(spots: Array) -> Array:
+	var out := []
+	for i in spots.size():
+		var s: Array = spots[i]
+		var gy = ground_height(float(s[0]), float(s[1]))
+		if gy == null:
+			continue
+		var yaw := fmod(float(i) * 2.39996, TAU)
+		var org := Vector3(float(s[0]), float(gy) - 0.05, float(s[1]))
+		out.append([Transform3D(Basis(Vector3.UP, yaw), org), float(s[2])])
+	return out
+
+
+func _multimesh(spots: Array, mesh: Mesh, node_name: String) -> MultiMeshInstance3D:
+	return _multimesh_builder(_veg_transforms(spots), mesh, node_name)
+
+
+func _multimesh_builder(xforms: Array, mesh: Mesh, node_name: String,
+		offset := Vector3.ZERO) -> MultiMeshInstance3D:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.instance_count = xforms.size()
+	for i in xforms.size():
+		var t: Transform3D = xforms[i][0]
+		var s: float = xforms[i][1]
+		var b := Basis(t.basis.x * s, t.basis.y * s, t.basis.z * s)
+		mm.set_instance_transform(i, Transform3D(b, t.origin + offset * s))
+	var inst := MultiMeshInstance3D.new()
+	inst.name = node_name
+	inst.multimesh = mm
+	return inst
+
+
+func _grass_mesh() -> ArrayMesh:
+	## Dos quads cruzados de ~0.5 m, verde sin sombrear.
+	var v := PackedVector3Array([
+		Vector3(-0.25, 0, 0), Vector3(0.25, 0, 0),
+		Vector3(-0.25, 0.5, 0), Vector3(0.25, 0.5, 0),
+		Vector3(0, 0, -0.25), Vector3(0, 0, 0.25),
+		Vector3(0, 0.5, -0.25), Vector3(0, 0.5, 0.25)])
+	var idx := PackedInt32Array([0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6])
+	var arr := []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = v
+	arr[Mesh.ARRAY_INDEX] = idx
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.3, 0.55, 0.25)
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mesh.surface_set_material(0, mat)
+	return mesh
+
+
+func _trunk_mesh() -> CylinderMesh:
+	var m := CylinderMesh.new()
+	m.top_radius = 0.08
+	m.bottom_radius = 0.12
+	m.height = 1.0
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.4, 0.28, 0.15)
+	mat.roughness = 1.0
+	m.material = mat
+	return m
+
+
+func _canopy_mesh() -> CylinderMesh:
+	var m := CylinderMesh.new()
+	m.top_radius = 0.0
+	m.bottom_radius = 0.9
+	m.height = 1.8
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.2, 0.45, 0.2)
+	mat.roughness = 1.0
+	m.material = mat
+	return m
+
+
+func _terrain_uv(ix: int, iz: int, n: int, xs: Array, ys: Array,
+		nx: int, ny: int) -> Vector2:
+	## Cuadrante del tile con inset (igual que lnd_to_glb.py).
+	if xs.is_empty():
+		return Vector2(ix / float(n - 1), iz / float(n - 1))
+	var inset := 0.5 / 256.0
+	var tix := mini(ix / 128, nx - 1)
+	var tiz := mini(iz / 128, ny - 1)
+	var u := clampf((ix - tix * 128) / 128.0, inset, 1.0 - inset)
+	var v := clampf((iz - tiz * 128) / 128.0, inset, 1.0 - inset)
+	return Vector2((tix + u) / nx, (tiz + v) / ny)
+
+
+func _build_terrain_mesh(n: int, step: float, ox: float, oz: float,
+		hs: Array, tiles: Array) -> MeshInstance3D:
 	## Visual de repliegue cuando el .glb no está importado (misma matemática
 	## que lnd_to_glb.py): la colisión y el snap salen del JSON igualmente.
+	## Con atlas generado usa la pintura; si no, verde plano.
 	var verts := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var uvs := PackedVector2Array()
 	verts.resize(n * n)
 	normals.resize(n * n)
 	uvs.resize(n * n)
+	var xs := []
+	var ys := []
+	for t in tiles:
+		if not xs.has(int(t[0])):
+			xs.append(int(t[0]))
+		if not ys.has(int(t[1])):
+			ys.append(int(t[1]))
+	xs.sort()
+	ys.sort()
+	var nx := maxi(xs.size(), 1)
+	var ny := maxi(ys.size(), 1)
 
 	var h := func(ix: int, iz: int) -> float:
 		return float(hs[clampi(iz, 0, n - 1) * n + clampi(ix, 0, n - 1)])
@@ -136,7 +285,7 @@ func _build_terrain_mesh(n: int, step: float, ox: float, oz: float, hs: Array) -
 			var inv := 1.0 / sqrt(dx * dx + 1.0 + dz * dz)
 			verts[iz * n + ix] = Vector3(ox + ix * step, h.call(ix, iz), oz + iz * step)
 			normals[iz * n + ix] = Vector3(-dx * inv, inv, -dz * inv)
-			uvs[iz * n + ix] = Vector2(ix / float(n - 1), iz / float(n - 1))
+			uvs[iz * n + ix] = _terrain_uv(ix, iz, n, xs, ys, nx, ny)
 	var idx := PackedInt32Array()
 	for iz in range(n - 1):
 		for ix in range(n - 1):
@@ -151,8 +300,12 @@ func _build_terrain_mesh(n: int, step: float, ox: float, oz: float, hs: Array) -
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.32, 0.38, 0.3)
 	mat.roughness = 1.0
+	if ResourceLoader.exists("res://models/terrain_ironhold_atlas.png"):
+		mat.albedo_texture = load("res://models/terrain_ironhold_atlas.png")
+		mat.albedo_color = Color(0.82, 0.82, 0.82)
+	else:
+		mat.albedo_color = Color(0.32, 0.38, 0.3)
 	mesh.surface_set_material(0, mat)
 	var inst := MeshInstance3D.new()
 	inst.name = "TerrainMesh"
@@ -253,6 +406,16 @@ func _spawn_one(container: Node3D, def: Dictionary, center: Vector3, idx: int) -
 	container.add_child(m)
 
 
+func _first_mesh(n: Node) -> MeshInstance3D:
+	if n is MeshInstance3D:
+		return n as MeshInstance3D
+	for c in n.get_children():
+		var r := _first_mesh(c)
+		if r != null:
+			return r
+	return null
+
+
 # --- Simulación headless ---
 func _check(cond: bool, msg: String) -> void:
 	if cond:
@@ -310,6 +473,37 @@ func _run_sim() -> void:
 			var sgy2 = ground_height(player.global_position.x, player.global_position.z)
 			_check(sgy2 != null and absf(player.global_position.y - (sgy2 - 0.1)) < 1.0,
 				"reposa en ladera (y %.1f vs %.1f)" % [player.global_position.y, sgy2])
+
+	# --- color del terreno (aethermere-terrain-color) ---
+	_check(get_node_or_null("Water") != null, "agua al nivel del mar")
+	var tm = get_node_or_null("TerrainMesh")
+	var tmi: MeshInstance3D = null
+	if tm is MeshInstance3D:
+		tmi = tm as MeshInstance3D
+	elif tm != null:
+		tmi = _first_mesh(tm)
+	if tmi != null:
+		var tmat = tmi.get_surface_override_material(0)
+		if tmat == null:
+			tmat = tmi.mesh.surface_get_material(0)
+		var has_tex := tmat != null and tmat is StandardMaterial3D \
+			and (tmat as StandardMaterial3D).albedo_texture != null
+		if ResourceLoader.exists("res://models/terrain_ironhold_atlas.png"):
+			_check(has_tex, "suelo con pintura del atlas")
+		else:
+			_check(not has_tex, "repliegue verde sin atlas")
+	var gr = get_node_or_null("Grass")
+	var trunks = get_node_or_null("TreeTrunks")
+	var want_grass: Array = (_terrain as Dictionary).get("grass", []) \
+		if _terrain != null else []
+	if not want_grass.is_empty():
+		var got := 0
+		if gr != null:
+			got = (gr as MultiMeshInstance3D).multimesh.instance_count
+		_check(got > 0, "hierba instanciada (%d)" % got)
+		_check(trunks != null, "arboles instanciados")
+	else:
+		_check(gr == null, "sin hierba sin puestos")
 
 	# --- proteccion (aethermere-spawn-safe; gracia fresca de _ready) ---
 	player.hp = player.max_hp
@@ -539,10 +733,18 @@ func _run_sim() -> void:
 		if str(m.get("model_name")) == "":
 			continue
 		modeled += 1
-		var ap = m.get("_anim")
-		if ap != null and ap.is_playing():
-			var cur: String = ap.current_animation
-			if cur in ["walk", "Walk", "stand", "Stand", "idle1", "Idle1"]:
+		if _is_locomotion(m):
+			walked += 1
+	if walked != modeled:
+		# Un golpe a medio reproducir no es Marcha quieta: se deja
+		# terminar (~1.4 s) y se recuenta una vez antes de fallar.
+		for i in 120:
+			await get_tree().physics_frame
+		walked = 0
+		for m in get_tree().get_nodes_in_group("monsters"):
+			if str(m.get("model_name")) == "":
+				continue
+			if _is_locomotion(m):
 				walked += 1
 	_check(modeled >= 7, "monstruos con modelo en escena (%d)" % modeled)
 	_check(walked == modeled, "locomocion en marcha (%d/%d)" % [walked, modeled])
@@ -740,6 +942,14 @@ func _run_sim() -> void:
 	else:
 		print("SIM-QUEST FAIL: %s" % str(_failures))
 		get_tree().quit(1)
+
+
+func _is_locomotion(m: Node) -> bool:
+	var ap = m.get("_anim")
+	if ap == null or not ap.is_playing():
+		return false
+	var cur: String = ap.current_animation
+	return cur in ["walk", "Walk", "stand", "Stand", "idle1", "Idle1"]
 
 
 func _take_shot() -> void:

@@ -2,8 +2,10 @@
 """Malla de terreno (.glb) desde una rejilla de alturas combinada.
 
 Entrada: dict JSON de setup_terrain.py (origin, tile_size, n_tiles, grid
-de alturas en metros ya rebasadas). Salida: .glb con posiciones, normales
-(diferencias finitas), UV planares y un material de hierba.
+de alturas en metros ya rebasadas, tiles para UV por cuadrante y
+opcionalmente atlas_png con la textura). Salida: .glb con posiciones,
+normales (diferencias finitas), UV al cuadrante del tile y material con
+la textura del atlas (o hierba plana sin atlas).
 
 Uso:
     python3 lnd_to_glb.py --grid terreno.json --output terreno.glb
@@ -50,6 +52,21 @@ def build(spec: dict) -> bytes:
     ox, oz = spec["origin"]
     hs = spec["heights"]
     assert len(hs) == n * n, f"rejilla {len(hs)} != {n}x{n}"
+    tiles = [tuple(t) for t in spec.get("tiles", [])]
+    xs = sorted({t[0] for t in tiles})
+    ys = sorted({t[1] for t in tiles})
+    nx, ny = max(len(xs), 1), max(len(ys), 1)
+    # Inset de medio texel del cuadrante contra el sangrado.
+    inset = 0.5 / 256.0
+
+    def uv_of(ix: int, iz: int) -> tuple[float, float]:
+        if not tiles:
+            return (ix / (n - 1), iz / (n - 1))
+        tix = min(ix // 128, nx - 1)
+        tiz = min(iz // 128, ny - 1)
+        u = min(max((ix - tix * 128) / 128.0, inset), 1.0 - inset)
+        v = min(max((iz - tiz * 128) / 128.0, inset), 1.0 - inset)
+        return ((tix + u) / nx, (tiz + v) / ny)
 
     def h(ix: int, iz: int) -> float:
         ix = min(max(ix, 0), n - 1)
@@ -66,7 +83,7 @@ def build(spec: dict) -> bytes:
             dz = (h(ix, iz + 1) - h(ix, iz - 1)) / (2.0 * step)
             inv = 1.0 / math.sqrt(dx * dx + 1.0 + dz * dz)
             nor += [-dx * inv, inv, -dz * inv]
-            uv += [ix / (n - 1), iz / (n - 1)]
+            uv += list(uv_of(ix, iz))
 
     idx = []
     for iz in range(n - 1):
@@ -88,6 +105,27 @@ def build(spec: dict) -> bytes:
     na = w.add_accessor(w.add_view(nbin), 5126, n * n, "VEC3")
     ta = w.add_accessor(w.add_view(ubin), 5126, n * n, "VEC2")
     ia = w.add_accessor(w.add_view(ibin), 5125, len(idx), "SCALAR")
+    atlas = spec.get("atlas_png")
+    if atlas is not None and isinstance(atlas, str):
+        import base64
+        atlas = base64.b64decode(atlas)
+    if atlas is not None:
+        img_view = w.add_view(bytes(atlas))
+        material = {"name": "terrain",
+                    "pbrMetallicRoughness": {
+                        "baseColorTexture": {"index": 0},
+                        "baseColorFactor": [0.82, 0.82, 0.82, 1.0],
+                        "metallicFactor": 0.0, "roughnessFactor": 1.0}}
+        images = [{"bufferView": img_view, "mimeType": "image/png"}]
+        samplers = [{"magFilter": 9729, "minFilter": 9987,
+                     "wrapS": 10497, "wrapT": 10497}]
+        textures = [{"source": 0, "sampler": 0}]
+    else:
+        material = {"name": "grass",
+                    "pbrMetallicRoughness": {
+                        "baseColorFactor": [0.32, 0.38, 0.3, 1.0],
+                        "metallicFactor": 0.0, "roughnessFactor": 1.0}}
+        images, samplers, textures = [], [], []
     gltf = {
         "asset": {"version": "2.0", "generator": "aethermere lnd_to_glb"},
         "scene": 0,
@@ -96,14 +134,16 @@ def build(spec: dict) -> bytes:
         "meshes": [{"name": "terrain", "primitives": [{"attributes": {
             "POSITION": pa, "NORMAL": na, "TEXCOORD_0": ta},
             "indices": ia, "material": 0, "mode": 4}]}],
-        "materials": [{"name": "grass",
-                       "pbrMetallicRoughness": {
-                           "baseColorFactor": [0.32, 0.38, 0.3, 1.0],
-                           "metallicFactor": 0.0, "roughnessFactor": 1.0}}],
+        "materials": [material],
+        "animations": [],
         "accessors": w.accessors,
         "bufferViews": w.views,
         "buffers": [{"byteLength": len(w.bin)}],
     }
+    if images:
+        gltf["images"] = images
+        gltf["samplers"] = samplers
+        gltf["textures"] = textures
 
     def pad(data: bytes, char: bytes) -> bytes:
         return data + char * (-len(data) % 4)

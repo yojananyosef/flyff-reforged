@@ -95,7 +95,7 @@ spring_length = 6.5
 current = true
 
 [node name="NPC" type="StaticBody3D" parent="." groups=["npcs"]]
-position = Vector3(4, 0, -2)
+position = Vector3(3, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="NPC"]
 position = Vector3(0, 1, 0)
