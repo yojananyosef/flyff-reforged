@@ -4,7 +4,10 @@
 Evidencia (ver design aethermere-skin):
   - m1 = inversa de m0; m2 = matriz local (orden L*P, row-major D3D).
   - articulacion = usebones[matIdx // 3]; nombres .ani == .chr.
-  - matrices traspuestas a column-major glTF; quats tal cual.
+  - matrices traspuestas a column-major glTF; quats TAL CUAL (sin
+    conjugar: con nodos traspuestos, el skin deformado es la imagen
+    traspuesta — espejo izq-der natural —; conjugando se niegan los
+    angulos de bisagra y salen brazos de zombi).
 
 Uso:
     python3 o3d_to_skinglb.py --o3d M.o3d --chr M.chr --anis "M_*.ani" --output M.glb
@@ -17,6 +20,7 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import math
 import os
 import struct
 import sys
@@ -32,6 +36,25 @@ FPS = 30.0
 
 def transpose(m: list[float]) -> list[float]:
     return [m[r + 4 * c] for c in range(4) for r in range(4)]
+
+
+def mat_to_quat_row(m: list[float]) -> list[float]:
+    """Rotacion de una mat4 row-major D3D a cuaternion (x, y, z, w)."""
+    t = m[0] + m[5] + m[10]
+    if t > 0:
+        s = math.sqrt(t + 1.0) * 2
+        w, x, y, z = 0.25 * s, (m[6] - m[9]) / s, (m[8] - m[2]) / s, (m[1] - m[4]) / s
+    elif m[0] > m[5] and m[0] > m[10]:
+        s = math.sqrt(1.0 + m[0] - m[5] - m[10]) * 2
+        w, x, y, z = (m[6] - m[9]) / s, 0.25 * s, (m[1] + m[4]) / s, (m[8] + m[2]) / s
+    elif m[5] > m[10]:
+        s = math.sqrt(1.0 + m[5] - m[0] - m[10]) * 2
+        w, x, y, z = (m[8] - m[2]) / s, (m[1] + m[4]) / s, 0.25 * s, (m[6] + m[9]) / s
+    else:
+        s = math.sqrt(1.0 + m[10] - m[0] - m[5]) * 2
+        w, x, y, z = (m[1] - m[4]) / s, (m[8] + m[2]) / s, (m[6] + m[9]) / s, 0.25 * s
+    n = math.sqrt(x * x + y * y + z * z + w * w)
+    return [x / n, y / n, z / n, w / n]
 
 
 class GlbWriter:
@@ -169,15 +192,42 @@ def build(o3d_path: str | list[str], chr_path: str, ani_paths: list[str]) -> byt
         t_acc = w.add_accessor(w.add_view(times), 5126, nframes, "SCALAR",
                                [0.0], [(nframes - 1) / FPS])
         channels, samplers = [], []
+        # Huesos estaticos del clip: el motor usa su TM del .ani, pero
+        # Godot caeria al reposo del nodo (.chr) — distinto por clip
+        # (p. ej. antebrazos en alto en vez de a los costados). Se hornea
+        # su reposo como pistas constantes de 2 claves.
+        t_end = (nframes - 1) / FPS
+        times2 = struct.pack("<2f", 0.0, t_end)
+        t2_acc = w.add_accessor(w.add_view(times2), 5126, 2, "SCALAR",
+                                [0.0], [t_end])
         for bname, ab in abones.items():
-            if bname not in name_to_node or not ab.get("animated"):
+            if bname not in name_to_node:
+                continue
+            node = name_to_node[bname]
+            if not ab.get("animated"):
+                q = mat_to_quat_row(ab["local"])
+                t = ab["local"]
+                rots = struct.pack("<8f", *q, *q)
+                poss = struct.pack("<6f", t[12], t[13], t[14],
+                                   t[12], t[13], t[14])
+                r_acc = w.add_accessor(w.add_view(rots), 5126, 2, "VEC4")
+                p_acc = w.add_accessor(w.add_view(poss), 5126, 2, "VEC3")
+                samplers.append({"input": t2_acc, "output": r_acc, "interpolation": "LINEAR"})
+                channels.append({"sampler": len(samplers) - 1,
+                                 "target": {"node": node, "path": "rotation"}})
+                samplers.append({"input": t2_acc, "output": p_acc, "interpolation": "LINEAR"})
+                channels.append({"sampler": len(samplers) - 1,
+                                 "target": {"node": node, "path": "translation"}})
                 continue
             fr = ab["frames"]
+            # Quats tal cual (x, y, z, w, igual que TM_ANIMATION del
+            # lector C++ de referencia): con nodos traspuestos el skin
+            # sale como imagen traspuesta (espejo natural); conjugando
+            # se niegan las flexiones (codos al reves, brazos de zombi).
             rots = b"".join(struct.pack("<4f", *f["rot"]) for f in fr)
             poss = b"".join(struct.pack("<3f", *f["pos"]) for f in fr)
             r_acc = w.add_accessor(w.add_view(rots), 5126, nframes, "VEC4")
             p_acc = w.add_accessor(w.add_view(poss), 5126, nframes, "VEC3")
-            node = name_to_node[bname]
             samplers.append({"input": t_acc, "output": r_acc, "interpolation": "LINEAR"})
             channels.append({"sampler": len(samplers) - 1,
                              "target": {"node": node, "path": "rotation"}})

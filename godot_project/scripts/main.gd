@@ -723,6 +723,14 @@ func _run_sim() -> void:
 		_check(is_equal_approx(brute.hp, c0 - 5.0), "solo un impacto (%.0f)" % brute.hp)
 		if player.get("_anim") != null:
 			_check(bool(player.get("_attacked_anim")), "avatar reproduce atk1 al golpear")
+		var vis: Node3D = player.get_node_or_null("Model")
+		if vis == null:
+			vis = player.get_node("MeshInstance3D") as Node3D
+		if vis != null and is_instance_valid(brute):
+			var tb: Vector3 = brute.global_position - player.global_position
+			var want: float = atan2(tb.x, tb.z)
+			_check(absf(wrapf(want - vis.rotation.y, -PI, PI)) < 0.5,
+				"avatar encara al golpear")
 	else:
 		_check(false, "lobo vivo para auto-ataque")
 

@@ -15,11 +15,12 @@ de puños de vagabundo). Toca reutilizar el pipeline para vestirlo.
   sus mallas en un solo `.glb` con el mismo esqueleto (piezas del cuerpo).
 - `scripts/converters/setup_player_model.py`: combina `mvr_male.chr` +
   piezas `Part_mVag01Upper/Hand/Foot` + `Part_maleHead06` +
-  `Part_maleHair06` + animaciones `GenFStand1-C` (stand), `GenFRunning1-C`
+  `Part_maleHair06` + animaciones `AtkStand-15` (stand), `AtkWalk-15`
   (walk) y `GenFAtk1-C` (atk1) en `PlayerMvr.glb` (no versionado).
 - `godot_project/scripts/player.gd`: monta `PlayerMvr.glb` si existe
   (stand en loop, walk al moverse, atk1 al golpear con vuelta a
-  locomoción); sin modelo mantiene la cápsula azul + punch de escala.
+  locomoción, encarando a la víctima); sin modelo mantiene la cápsula
+  azul + punch de escala.
 - `main.gd` (sim): comprueba avatar montado y locomoción activa.
 
 ## Capabilities

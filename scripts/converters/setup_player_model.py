@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 """Genera el avatar del jugador (vagabundo FlyFF) como .glb animado.
 
-Combina `mvr_male.chr` + 5 piezas SKIN + 3 animaciones genéricas de
-puños (variante -C) vía o3d_to_skinglb.py (multi --o3d):
+Combina `mvr_male.chr` + 5 piezas SKIN + 3 animaciones de cuerpo
+completo vía o3d_to_skinglb.py (multi --o3d):
 
     piezas: Part_mVag01Upper/Hand/Foot + Part_maleHead06 + Part_maleHair06
-    stand <- Mvr_male_GenFStand1-C | walk <- Mvr_male_GenFRunning1-C
+    stand <- Mvr_male_GenFStand1-D | walk <- Mvr_male_GenRun
     atk1  <- Mvr_male_GenFAtk1-C
+
+Nota: los sufijos -13/-14/-15 de marcha/carrera son posturas de
+montura (torso plegado: hombro a la altura de la cadera); la familia
+`GenFStand1/Running1-C` es casi estatica (piernas 0 grados).
+`GenFStand1-D` es reposo relajado y erguido (hombro +0.39 sobre la
+raiz), `GenRun` carrera erguida con zancada, `GenFAtk1-C` golpe en el
+sitio — verificacion de varianza, pose absoluta y esqueleto en Godot
+en el change aethermere-player-avatar.
 
 Como monstruos y terreno, el .glb no se versiona (ver .gitignore).
 
@@ -34,8 +42,8 @@ PARTS = [
 ]
 
 ANIS = {
-    "stand.ani": "Mvr_male_GenFStand1-C.ani",
-    "walk.ani": "Mvr_male_GenFRunning1-C.ani",
+    "stand.ani": "Mvr_male_GenFStand1-D.ani",
+    "walk.ani": "Mvr_male_GenRun.ani",
     "atk1.ani": "Mvr_male_GenFAtk1-C.ani",
 }
 

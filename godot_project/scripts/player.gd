@@ -293,6 +293,7 @@ func attack(only: Node3D = null) -> bool:
 		return false
 	if victim.has_method("take_damage"):
 		basic_cd = BASIC_CD_MAX
+		_face(victim.global_position)
 		if _anim != null:
 			_try_attack_anim()
 		else:
@@ -315,6 +316,20 @@ func _swing_fx() -> void:
 	_swing_tween = create_tween()
 	_swing_tween.tween_property(body_mesh, "scale", Vector3(1.25, 0.8, 1.25), 0.09)
 	_swing_tween.tween_property(body_mesh, "scale", Vector3.ONE, 0.12)
+
+
+func _face(p: Vector3) -> void:
+	## Encara lo visible hacia un punto (golpes quietos: sin marcha que
+	## oriente el cuerpo, el modelo pegaba mirando a otro lado).
+	var to := p - global_position
+	to.y = 0.0
+	if to.length() < 0.01:
+		return
+	var yaw := atan2(to.x, to.z) - rotation.y
+	if _model != null:
+		_model.rotation.y = yaw
+	if body_mesh.visible:
+		body_mesh.rotation.y = yaw
 
 
 func _target_in_range(max_range: float) -> Node3D:
@@ -657,6 +672,7 @@ func cast_skill(skill_id: String) -> bool:
 		var dmg := phys_damage(attack_stat(), float(def.get("power", 0)) + EMBER_POWER_BONUS,
 			foe.get("defense"))
 		foe.take_damage(dmg, self)
+		_face(foe.global_position)
 		if _anim != null:
 			_try_attack_anim()
 		else:

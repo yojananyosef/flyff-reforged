@@ -32,6 +32,25 @@ repliegue en `monster.gd`), `anim` (walk en marcha, atk por golpe),
   (31 f), `GenFAtk1-C` (41 f); las tres animan los 30 huesos del
   esqueleto. `-C` es la postura de combate sin arma del vagabundo;
   coherente con el ataque básico actual.
+- **Quats tal cual + horneado de estáticos**: el motor compone mundo =
+  local × padre con locales R×T (verificado en `CMotion::AnimateBone`
+  del lector C++ de referencia) y los estáticos usan su TM del `.ani`.
+  El exportador vuelca nodos/IBMS traspuestos y quats sin conjugar: el
+  skin deformado es la imagen traspuesta (espejo izq-der, poses
+  naturales). Se probó conjugando y niega las flexiones (codos al
+  revés, brazos de zombi en el avatar). Los huesos estáticos de cada
+  clip se hornean como pistas constantes desde su TM del `.ani` (el
+  reposo del nodo es del `.chr` y difiere por clip).
+- **Corrección de clips (revisión)**: la familia `GenFStand1/Running1-C`
+  resultó casi estática (piernas 0°, brazos ~5°: postura congelada, sin
+  idle ni marcha visibles) y los `AtkWalk/Run-13/14/15` son posturas de
+  montura (torso plegado: el hombro queda a la altura de la cadera, el
+  avatar parecía volar tumbado). Se usa `GenFStand1-D` (reposo relajado
+  y erguido: hombro +0.39 sobre la raíz) y `GenRun` (carrera erguida
+  con zancada, acorde a los 5 m/s del jugador); `GenFAtk1-C` se
+  conserva (balanceo de 110° en el sitio). Clips validados por
+  varianza, pose absoluta y muestreo del esqueleto en Godot antes de
+  exportar.
 - **`walk` = `GenFRunning1-C`**: no existe `GenFWalk` humano; a 5 m/s el
   jugador corre de facto, y el clip de carrera evita el deslizamiento
   lento. Se exporta con nombre `walk` para reutilizar la convención de
