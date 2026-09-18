@@ -11,7 +11,8 @@
     "drops": [
       "item_005"
     ],
-    "model": "Mvr_PetCat1"
+    "model": "Mvr_PetCat1",
+    "aggro_range": 0
   },
   {
     "id": "mon_002",
@@ -25,7 +26,8 @@
     "drops": [
       "item_006"
     ],
-    "model": "Mvr_Buur"
+    "model": "Mvr_Buur",
+    "aggro_range": 5
   },
   {
     "id": "mon_003",
@@ -39,7 +41,8 @@
     "drops": [
       "item_007"
     ],
-    "model": "Mvr_Dreamflame01"
+    "model": "Mvr_Dreamflame01",
+    "aggro_range": 6
   },
   {
     "id": "mon_004",
@@ -53,7 +56,8 @@
     "drops": [
       "item_008"
     ],
-    "model": "Mvr_PetParrot"
+    "model": "Mvr_PetParrot",
+    "aggro_range": 0
   },
   {
     "id": "mon_005",
@@ -67,6 +71,7 @@
     "drops": [
       "item_009"
     ],
-    "model": "Mvr_PetDog1"
+    "model": "Mvr_PetDog1",
+    "aggro_range": 8
   }
 ]

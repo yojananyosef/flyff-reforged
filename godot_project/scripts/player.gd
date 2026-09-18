@@ -39,6 +39,15 @@ var bulwark_time: float = 0.0
 var use_cooldown: float = 0.0
 var target: Node3D = null  # objetivo fijado con clic (grupo "monsters")
 
+## Marcha por clic + básicos automáticos (aethermere-melee).
+const BASIC_CD_MAX := 0.9
+var basic_cd: float = 0.0
+var auto_attack := false
+var has_dest := false
+var move_dest := Vector3.ZERO
+var _move_marker: MeshInstance3D = null
+var _swing_tween: Tween = null
+
 @onready var cam_pivot: Node3D = $CamPivot
 @onready var spring: SpringArm3D = $CamPivot/SpringArm3D
 @onready var body_mesh: MeshInstance3D = $MeshInstance3D
@@ -52,6 +61,19 @@ static func phys_damage(atk: float, power: float, defense: float) -> float:
 func _ready() -> void:
 	add_to_group("player")
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	var ring := MeshInstance3D.new()
+	ring.name = "MoveMarker"
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.28
+	torus.outer_radius = 0.42
+	var mmat := StandardMaterial3D.new()
+	mmat.albedo_color = Color(1.0, 0.85, 0.2)
+	mmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	torus.material = mmat
+	ring.mesh = torus
+	ring.visible = false
+	get_parent().add_child.call_deferred(ring)
+	_move_marker = ring
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -63,11 +85,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
 			if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-				var picked := _pick_monster()
-				if picked != null:
+				var hit := _click_hit()
+				var picked: Node3D = hit.get("monster")
+				if mb.double_click and picked != null:
+					target = picked
+					auto_attack = true
+					print("[Player] auto-ataque: %s" % picked.get("display_name"))
+				elif picked != null:
 					target = picked
 					print("[Player] objetivo: %s" % picked.get("display_name"))
-				attack(picked)
+					attack(picked)
+				elif hit.get("ground") != null:
+					_set_dest(hit["ground"])
+					auto_attack = false
+				else:
+					attack()
 	elif event is InputEventKey and event.pressed and not event.echo:
 		# Gancho de prueba: F1 inflige 10 de dano para ver el HUD (tarea 3.3).
 		if event.physical_keycode == KEY_F1:
@@ -89,6 +121,7 @@ func _physics_process(delta: float) -> void:
 	for sid in cooldown_left:
 		cooldown_left[sid] = maxf(0.0, float(cooldown_left[sid]) - delta)
 	use_cooldown = maxf(0.0, use_cooldown - delta)
+	basic_cd = maxf(0.0, basic_cd - delta)
 	if bulwark_time > 0.0:
 		bulwark_time -= delta
 		if bulwark_time <= 0.0:
@@ -98,6 +131,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y = jump_velocity
 	if target != null and not is_instance_valid(target):
 		target = null
+		auto_attack = false
 
 	var input_dir := Vector2(
 		Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
@@ -105,8 +139,28 @@ func _physics_process(delta: float) -> void:
 	)
 	var dir: Vector3 = Vector3.ZERO
 	if input_dir.length() > 0.01:
+		# El teclado manda y cancela la marcha por clic (no el auto-ataque,
+		# que retoma al soltar las teclas).
+		has_dest = false
+		_hide_marker()
 		var yaw := cam_pivot.global_rotation.y
 		dir = (Basis(Vector3.UP, yaw) * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
+	elif has_dest:
+		var to_d: Vector3 = move_dest - global_position
+		to_d.y = 0.0
+		if to_d.length() < 0.4:
+			has_dest = false
+			_hide_marker()
+		else:
+			dir = to_d.normalized()
+	elif auto_attack and target != null and is_instance_valid(target):
+		var to_t: Vector3 = target.global_position - global_position
+		to_t.y = 0.0
+		if to_t.length() > attack_range * 0.9:
+			dir = to_t.normalized()
+		else:
+			attack()
+	if dir.length() > 0.01:
 		# Gira solo la malla visible: el cuerpo (CharacterBody3D) no rota
 		# porque CamPivot/Camera cuelgan de el y la camara orbitaria sola
 		# al pulsar A/D (bug: parecia que se movia la camara y no el pj).
@@ -114,16 +168,19 @@ func _physics_process(delta: float) -> void:
 
 	velocity.x = dir.x * speed
 	velocity.z = dir.z * speed
-	if input_dir.length() < 0.01 and is_on_floor():
+	if dir.length() < 0.01 and is_on_floor():
 		velocity.x = move_toward(velocity.x, 0.0, speed * 10.0 * delta)
 		velocity.z = move_toward(velocity.z, 0.0, speed * 10.0 * delta)
 	move_and_slide()
 
 
 func attack(only: Node3D = null) -> bool:
-	## Golpe básico. Con `only` (clic a un monstruo) exige rango y avisa si
-	## no llega; sin `only` prioriza el objetivo fijado en rango y si no hay,
-	## el más cercano como antes. Propaga atacante para el agro.
+	## Golpe básico con ritmo (0.9 s) y gesto visible. Con `only` (clic a un
+	## monstruo) exige rango y avisa si no llega; sin `only` prioriza el
+	## objetivo fijado en rango y si no hay, el más cercano como antes.
+	## Propaga atacante para el agro.
+	if basic_cd > 0.0:
+		return false
 	_audio().play_sfx("swing")
 	var victim: Node3D = null
 	if only != null:
@@ -140,6 +197,8 @@ func attack(only: Node3D = null) -> bool:
 	if victim == null:
 		return false
 	if victim.has_method("take_damage"):
+		basic_cd = BASIC_CD_MAX
+		_swing_fx()
 		var dmg := phys_damage(attack_stat(), 0.0, victim.get("defense"))
 		victim.take_damage(dmg, self)
 		_audio().play_sfx("hit")
@@ -147,6 +206,17 @@ func attack(only: Node3D = null) -> bool:
 		print("[Player] golpe a %s (%.0f dmg)" % [victim.get("monster_id"), dmg])
 		return true
 	return false
+
+
+func _swing_fx() -> void:
+	if body_mesh == null:
+		return
+	if _swing_tween != null and _swing_tween.is_valid():
+		_swing_tween.kill()
+	body_mesh.scale = Vector3.ONE
+	_swing_tween = create_tween()
+	_swing_tween.tween_property(body_mesh, "scale", Vector3(1.25, 0.8, 1.25), 0.09)
+	_swing_tween.tween_property(body_mesh, "scale", Vector3.ONE, 0.12)
 
 
 func _target_in_range(max_range: float) -> Node3D:
@@ -160,13 +230,13 @@ func _target_in_range(max_range: float) -> Node3D:
 	return target
 
 
-func _pick_monster() -> Node3D:
-	## Rayo desde el centro de pantalla (punto de mira) hasta 100 m.
-	## Centro y no posición del clic: con pointer-lock la posición del
-	## evento no es fiable en web.
+func _click_hit() -> Dictionary:
+	## Un solo rayo central por clic: devuelve `monster` (grupo monsters,
+	## con tolerancia de 140 px) y/o `ground` (punto de suelo válido).
+	var out := {"monster": null, "ground": null}
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
-		return null
+		return out
 	var center := get_viewport().get_visible_rect().size / 2.0
 	var origin := cam.project_ray_origin(center)
 	var end := origin + cam.project_ray_normal(center) * 100.0
@@ -175,9 +245,21 @@ func _pick_monster() -> Node3D:
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	var collider = hit.get("collider")
 	if collider != null and (collider as Node).is_in_group("monsters"):
-		return collider as Node3D
-	# Tolerancia: el rayo exacto falla con bichos pequeños en movimiento;
-	# se acepta el monstruo visible más cercano al punto de mira (140 px).
+		out["monster"] = collider as Node3D
+		return out
+	if hit.has("position"):
+		var p: Vector3 = hit["position"]
+		var n: Vector3 = hit.get("normal", Vector3.UP)
+		if n.y > 0.5 and absf(p.x) < 19.0 and absf(p.z) < 19.0:
+			out["ground"] = p
+	if out["monster"] == null:
+		out["monster"] = _near_crosshair(cam, center)
+	return out
+
+
+func _near_crosshair(cam: Camera3D, center: Vector2) -> Node3D:
+	## Tolerancia: el rayo exacto falla con bichos pequeños en movimiento;
+	## se acepta el monstruo visible más cercano al punto de mira (140 px).
 	var best: Node3D = null
 	var best_d := 140.0
 	for m in get_tree().get_nodes_in_group("monsters"):
@@ -190,6 +272,20 @@ func _pick_monster() -> Node3D:
 			best_d = d
 			best = n
 	return best
+
+
+func _set_dest(p: Vector3) -> void:
+	has_dest = true
+	move_dest = p
+	if _move_marker != null and is_instance_valid(_move_marker):
+		_move_marker.global_position = Vector3(p.x, 0.05, p.z)
+		_move_marker.visible = true
+	print("[Player] destino: (%.1f, %.1f)" % [p.x, p.z])
+
+
+func _hide_marker() -> void:
+	if _move_marker != null and is_instance_valid(_move_marker):
+		_move_marker.visible = false
 
 
 func take_damage(amount: float) -> void:
@@ -367,6 +463,12 @@ func _respawn() -> void:
 	mp = max_mp
 	velocity = Vector3.ZERO
 	target = null
+	auto_attack = false
+	has_dest = false
+	basic_cd = 0.0
+	_hide_marker()
+	if body_mesh != null:
+		body_mesh.scale = Vector3.ONE
 	print("[Player] resucitado en el punto de spawn")
 
 

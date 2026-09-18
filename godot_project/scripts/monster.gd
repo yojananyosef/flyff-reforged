@@ -23,10 +23,12 @@ var _touch_cooldown: float = 0.0
 var _attacking := false
 var _attacked_anim := false  # gancho de sim: true si reprodujo un clip atk
 
-## Agro: proximidad 6 m, leash 14 m, persecución a 2.8 m/s.
-const AGGRO_RANGE := 6.0
+## Agro: proximidad por monstruo (0 = manso, solo contacto/daño), leash 14 m.
 const LEASH_RANGE := 14.0
 const CHASE_SPEED := 2.8
+const STOP_DIST := 1.1  # frena antes de meterse bajo el jugador
+const DEFAULT_AGGRO := 6.0
+var aggro_range := DEFAULT_AGGRO
 var aggro_target: Node3D = null
 
 @onready var name_label: Label3D = $NameLabel
@@ -43,6 +45,7 @@ func setup(def: Dictionary) -> void:
 	defense = float(def.get("defense", 0))
 	exp_value = float(def.get("exp", 1))
 	drops = def.get("drops", [])
+	aggro_range = float(def.get("aggro_range", DEFAULT_AGGRO))
 
 
 func _ready() -> void:
@@ -128,12 +131,16 @@ func _physics_process(delta: float) -> void:
 	_update_aggro(player)
 	var speed := wander_speed
 	if aggro_target != null:
-		# En combate: el paseo se suspende, caza al jugador.
+		# En combate: el paseo se suspende, caza al jugador pero frena a
+		# STOP_DIST para no meterse bajo su cápsula ni empujarlo.
 		var to: Vector3 = aggro_target.global_position - global_position
 		to.y = 0.0
-		if to.length() > 0.25:
+		if to.length() < STOP_DIST:
+			_dir = Vector3.ZERO
+			speed = 0.0
+		else:
 			_dir = to.normalized()
-		speed = CHASE_SPEED
+			speed = CHASE_SPEED
 	else:
 		_wander_timer -= delta
 		if _wander_timer <= 0.0:
@@ -150,6 +157,11 @@ func _physics_process(delta: float) -> void:
 		if global_position.distance_to(player.global_position) < 1.4:
 			_touch_cooldown = 1.0
 			aggro_target = player
+			# Encara de golpe: el lerp de marcha puede llegar tarde y el
+			# golpe parecía salir mirando a otro lado.
+			var face: Vector3 = player.global_position - global_position
+			if face.length() > 0.01:
+				rotation.y = atan2(face.x, face.z)
 			_try_attack_anim()
 			if player.has_method("take_mob_damage"):
 				player.take_mob_damage(attack)
@@ -165,7 +177,8 @@ func _update_aggro(player: Node3D) -> void:
 			aggro_target = null
 			_pick_direction()
 		return
-	if player != null and global_position.distance_to(player.global_position) < AGGRO_RANGE:
+	if player != null and aggro_range > 0.0 \
+			and global_position.distance_to(player.global_position) < aggro_range:
 		aggro_target = player
 		_wander_timer = 1.0
 

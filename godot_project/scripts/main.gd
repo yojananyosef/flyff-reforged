@@ -93,6 +93,11 @@ func _spawn_monsters(game_data: Node) -> void:
 func _spawn_one(container: Node3D, def: Dictionary, center: Vector3, idx: int) -> void:
 	var m := CharacterBody3D.new()
 	m.set_script(MonsterScript)
+	# Capa 2: el jugador (capa 1) los atraviesa — con agro en enjambre lo
+	# encerraban y no podía caminar. El contacto sigue por distancia y el
+	# monstruo sí choca con el mundo y frena a 1.1 m.
+	m.collision_layer = 2
+	m.collision_mask = 1
 	var a := (float(idx) / 9.0) * TAU
 	var pos := center + Vector3(cos(a) * (5.0 + idx), 1.0, sin(a) * (5.0 + idx))
 	m.position = pos
@@ -405,6 +410,17 @@ func _run_sim() -> void:
 			brute = m
 			break
 	_check(brute != null, "existe lobo vivo para agro")
+	var calm: Node3D = null
+	for m in get_tree().get_nodes_in_group("monsters"):
+		if m.get("monster_id") == "mon_001" and not m.get("_dead"):
+			calm = m
+			break
+	if calm != null:
+		calm.set("aggro_target", null)
+		player.global_position = calm.global_position + Vector3(4.0, 0.0, 0.0)
+		for i in 60:
+			await get_tree().physics_frame
+		_check(calm.get("aggro_target") == null, "liebre mansa no agro a 4 m")
 	if brute != null:
 		brute.set("aggro_target", null)
 		player.global_position = brute.global_position + Vector3(5.0, 0.0, 0.0)
@@ -454,6 +470,59 @@ func _run_sim() -> void:
 		for i in 5:
 			await get_tree().physics_frame
 		_check(player.target == null, "objetivo muerto se limpia")
+
+	# --- melee (aethermere-melee) ---
+	player.global_position = Vector3(0, 0.5, 0)
+	player.hp = player.max_hp
+	if brute != null and is_instance_valid(brute) and not brute.get("_dead"):
+		brute.set("aggro_target", null)
+		brute.global_position = player.global_position + Vector3(4.0, 0.0, 0.0)
+		for i in 120:
+			await get_tree().physics_frame
+		var dc: float = brute.global_position.distance_to(player.global_position)
+		_check(dc >= 0.8, "frenada a >= 0.8 m (%.2f)" % dc)
+		var to_b: Vector3 = player.global_position - brute.global_position
+		var ang: float = absf(wrapf(atan2(to_b.x, to_b.z) - brute.rotation.y, -PI, PI))
+		_check(ang < 0.5, "encarado al golpear (< %.2f rad)" % ang)
+	else:
+		_check(false, "lobo vivo para frenada")
+
+	player.hp = player.max_hp
+	player.global_position = Vector3(0, 0.5, 0)
+	player._set_dest(Vector3(5.0, 0.5, 0.0))
+	for i in 120:
+		await get_tree().physics_frame
+	var dd: float = Vector2(player.global_position.x - 5.0, player.global_position.z).length()
+	_check(dd < 0.6, "click-mover llega (a %.2f m)" % dd)
+	player._set_dest(Vector3(-5.0, 0.5, 0.0))
+	Input.action_press("move_forward")
+	for i in 10:
+		await get_tree().physics_frame
+	Input.action_release("move_forward")
+	_check(not player.get("has_dest"), "WASD cancela destino")
+
+	if brute != null and is_instance_valid(brute) and not brute.get("_dead"):
+		brute.set("hp", 80.0)
+		player.hp = player.max_hp
+		player.global_position = Vector3(0, 0.5, 0)
+		brute.global_position = player.global_position + Vector3(6.0, 0.0, 0.0)
+		brute.set("aggro_target", null)
+		player.target = brute
+		player.auto_attack = true
+		var whp0: float = brute.hp
+		for i in 240:
+			await get_tree().physics_frame
+		_check(brute.hp < whp0, "auto-basicos bajan HP (%.0f -> %.0f)" % [whp0, brute.hp])
+		player.auto_attack = false
+		player.target = null
+		brute.global_position = player.global_position + Vector3(2.0, 0.0, 0.0)
+		player.basic_cd = 0.0
+		var c0: float = brute.hp
+		_check(player.attack(brute), "primer basico sale")
+		_check(not player.attack(brute), "segundo inmediato se rechaza por cooldown")
+		_check(is_equal_approx(brute.hp, c0 - 5.0), "solo un impacto (%.0f)" % brute.hp)
+	else:
+		_check(false, "lobo vivo para auto-ataque")
 
 	if _failures.is_empty():
 		print("SIM-QUEST PASS")

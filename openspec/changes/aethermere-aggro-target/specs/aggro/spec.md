@@ -7,14 +7,20 @@ combate, persiguen y vuelven a su rutina al perder el interés.
 
 ### Requirement: Agro por proximidad y por daño
 
-El monstruo SHALL fijar agro al jugador si entra en 6 m, si le golpea por
-contacto o si recibe daño suyo. Con agro, el deambular aleatorio queda
-suspendido.
+El monstruo SHALL fijar agro al jugador si entra en su `aggro_range`
+(liebre/cuervo 0 = mansos, solo contacto/daño; jabalí 5, wisp 6, lobo 8),
+si le golpea por contacto o si recibe daño suyo. Con agro, el deambular
+aleatorio queda suspendido.
 
 #### Scenario: Proximidad
 
-- **WHEN** el jugador se acerca a 5 m de una liebre viva
-- **THEN** en ≤ 1 s la liebre tiene agro fijado en el jugador
+- **WHEN** el jugador se acerca a 5 m de un lobo vivo (rango 8)
+- **THEN** en ≤ 1 s el lobo tiene agro fijado en el jugador
+
+#### Scenario: Manso
+
+- **WHEN** el jugador se queda a 4 m de una liebre viva 1 s
+- **THEN** la liebre no fija agro (solo contacto o daño la provoca)
 
 #### Scenario: Daño
 
