@@ -7,6 +7,7 @@ extends Node3D
 const MonsterScript := preload("res://scripts/monster.gd")
 
 var _failures: Array[String] = []
+var _terrain = null  # {n, step, ox, oz, hs} o null (repliegue al plano)
 
 @onready var player = $Player
 @onready var dialogue = $DialogueLayer
@@ -21,6 +22,10 @@ func _ready() -> void:
 	print("[Main] arranque OK. Zona: %s (%s)" % [game_data.current_zone_id, game_data.get_zone_display_name()])
 	if game_data.current_zone_id != "ironhold":
 		push_warning("[Main] zona actual no es 'ironhold': " + str(game_data.current_zone_id))
+	_load_terrain()
+	var psy = ground_height(player.position.x, player.position.z)
+	if psy != null:
+		player.position.y = psy + 0.5
 	npc_setup()
 	_spawn_monsters(game_data)
 	var audio = get_node_or_null("/root/AudioManager")
@@ -60,6 +65,118 @@ func _unhandled_input(event: InputEvent) -> void:
 func npc_setup() -> void:
 	$NPC.set_meta("npc_id", "npc_001")
 	$NPC2.set_meta("npc_id", "npc_002")
+	for npc in [$NPC, $NPC2]:
+		var gy = ground_height(npc.position.x, npc.position.z)
+		if gy != null:
+			npc.position.y = gy
+
+
+func _load_terrain() -> void:
+	## Suelo real (visual .glb + HeightMap) si setup_terrain.py generó los
+	## archivos; si no, se conserva el plano de la escena (repliegue).
+	var jpath := "res://models/terrain_ironhold.json"
+	var gpath := "res://models/terrain_ironhold.glb"
+	if not FileAccess.file_exists(jpath):
+		print("[Terreno] sin rejilla generada: plano de repliegue")
+		return
+	var spec = JSON.parse_string(FileAccess.get_file_as_string(jpath))
+	if not (spec is Dictionary):
+		push_warning("[Terreno] JSON inválido, plano de repliegue")
+		return
+	var n := int(spec.get("n", 0))
+	var hs: Array = spec.get("heights", [])
+	if n < 2 or hs.size() != n * n:
+		push_warning("[Terreno] rejilla inválida, plano de repliegue")
+		return
+	var step: float = float(spec.get("tile_size", 128.0)) / 128.0
+	var ox: float = spec.get("origin", [0, 0])[0]
+	var oz: float = spec.get("origin", [0, 0])[1]
+	_terrain = {"n": n, "step": step, "ox": ox, "oz": oz, "hs": hs}
+	var packed = null
+	if ResourceLoader.exists(gpath):
+		packed = load(gpath)
+	if packed is PackedScene:
+		var inst = (packed as PackedScene).instantiate()
+		inst.name = "TerrainMesh"
+		add_child(inst)
+	else:
+		add_child(_build_terrain_mesh(n, step, ox, oz, hs))
+	var body := StaticBody3D.new()
+	body.name = "TerrainBody"
+	body.position = Vector3(ox + (n - 1) * step / 2.0, 0.0, oz + (n - 1) * step / 2.0)
+	var shape := HeightMapShape3D.new()
+	shape.map_width = n
+	shape.map_depth = n
+	shape.map_data = PackedFloat32Array(hs)
+	var col := CollisionShape3D.new()
+	col.shape = shape
+	body.add_child(col)
+	add_child(body)
+	$Ground.visible = false
+	$Ground.get_node("CollisionShape3D").set_deferred("disabled", true)
+	print("[Terreno] malla %dx%d + HeightMap (origen %.0f, %.0f)" % [n, n, ox, oz])
+
+
+func _build_terrain_mesh(n: int, step: float, ox: float, oz: float, hs: Array) -> MeshInstance3D:
+	## Visual de repliegue cuando el .glb no está importado (misma matemática
+	## que lnd_to_glb.py): la colisión y el snap salen del JSON igualmente.
+	var verts := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	verts.resize(n * n)
+	normals.resize(n * n)
+	uvs.resize(n * n)
+
+	var h := func(ix: int, iz: int) -> float:
+		return float(hs[clampi(iz, 0, n - 1) * n + clampi(ix, 0, n - 1)])
+	for iz in range(n):
+		for ix in range(n):
+			var dx: float = (h.call(ix + 1, iz) - h.call(ix - 1, iz)) / (2.0 * step)
+			var dz: float = (h.call(ix, iz + 1) - h.call(ix, iz - 1)) / (2.0 * step)
+			var inv := 1.0 / sqrt(dx * dx + 1.0 + dz * dz)
+			verts[iz * n + ix] = Vector3(ox + ix * step, h.call(ix, iz), oz + iz * step)
+			normals[iz * n + ix] = Vector3(-dx * inv, inv, -dz * inv)
+			uvs[iz * n + ix] = Vector2(ix / float(n - 1), iz / float(n - 1))
+	var idx := PackedInt32Array()
+	for iz in range(n - 1):
+		for ix in range(n - 1):
+			var a := iz * n + ix
+			idx += PackedInt32Array([a, a + n, a + 1, a + 1, a + n, a + n + 1])
+	var arr := []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = verts
+	arr[Mesh.ARRAY_NORMAL] = normals
+	arr[Mesh.ARRAY_TEX_UV] = uvs
+	arr[Mesh.ARRAY_INDEX] = idx
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.32, 0.38, 0.3)
+	mat.roughness = 1.0
+	mesh.surface_set_material(0, mat)
+	var inst := MeshInstance3D.new()
+	inst.name = "TerrainMesh"
+	inst.mesh = mesh
+	return inst
+
+
+func ground_height(x: float, z: float):
+	## Altura bilineal o null sin terreno.
+	if _terrain == null:
+		return null
+	var n: int = _terrain["n"]
+	var fx: float = (x - _terrain["ox"]) / _terrain["step"]
+	var fz: float = (z - _terrain["oz"]) / _terrain["step"]
+	var x0 := clampi(int(floor(fx)), 0, n - 2)
+	var z0 := clampi(int(floor(fz)), 0, n - 2)
+	var tx: float = clampf(fx - x0, 0.0, 1.0)
+	var tz: float = clampf(fz - z0, 0.0, 1.0)
+	var hs: Array = _terrain["hs"]
+	var h00: float = hs[z0 * n + x0]
+	var h10: float = hs[z0 * n + x0 + 1]
+	var h01: float = hs[(z0 + 1) * n + x0]
+	var h11: float = hs[(z0 + 1) * n + x0 + 1]
+	return lerpf(lerpf(h00, h10, tx), lerpf(h01, h11, tx), tz)
 
 
 func nearest_npc():
@@ -101,6 +218,9 @@ func _spawn_one(container: Node3D, def: Dictionary, center: Vector3, idx: int) -
 	var a := (float(idx) / 9.0) * TAU
 	var pos := center + Vector3(cos(a) * (5.0 + idx), 1.0, sin(a) * (5.0 + idx))
 	m.position = pos
+	var gy = ground_height(pos.x, pos.z)
+	if gy != null:
+		m.position.y = gy + 1.0
 	m.setup(def)
 
 	var shape := CollisionShape3D.new()
@@ -171,6 +291,25 @@ func _run_sim() -> void:
 			expected += 5 if str(mid) == "mon_001" else 1
 	_check(get_tree().get_nodes_in_group("monsters").size() == expected,
 		"monstruos generados = %d" % expected)
+
+	# --- terreno (aethermere-lnd; el jugador cae al arrancar) ---
+	_check(_terrain != null, "terreno cargado (malla + HeightMap)")
+	if _terrain != null:
+		for i in 60:
+			await get_tree().physics_frame
+		var gy0 = ground_height(player.global_position.x, player.global_position.z)
+		_check(gy0 != null and absf(player.global_position.y - (gy0 - 0.1)) < 0.8,
+			"jugador reposa en el suelo (y %.1f vs %.1f)" % [player.global_position.y, gy0])
+		# Ladera del macizo este: colisión y muestreo coinciden (anti-espejo).
+		var sgy = ground_height(100.0, -150.0)
+		if sgy != null:
+			player.global_position = Vector3(100.0, sgy + 5.0, -150.0)
+			player.velocity = Vector3.ZERO
+			for i in 60:
+				await get_tree().physics_frame
+			var sgy2 = ground_height(player.global_position.x, player.global_position.z)
+			_check(sgy2 != null and absf(player.global_position.y - (sgy2 - 0.1)) < 1.0,
+				"reposa en ladera (y %.1f vs %.1f)" % [player.global_position.y, sgy2])
 
 	# --- proteccion (aethermere-spawn-safe; gracia fresca de _ready) ---
 	player.hp = player.max_hp
@@ -313,7 +452,8 @@ func _run_sim() -> void:
 	_check(player.equip("item_001"), "reequipar espada para cazar")
 
 	# Pell: dialogo de mercader con boton Comerciar
-	player.global_position = Vector3(-4, 0.5, 2)
+	var pell_y = ground_height(-4, 2)
+	player.global_position = Vector3(-4, (pell_y if pell_y != null else 0.0) + 1.0, 2)
 	var near = nearest_npc()
 	_check(near != null and str(near.get_meta("npc_id")) == "npc_002",
 		"E junto a Pell lo elige")
@@ -449,7 +589,23 @@ func _run_sim() -> void:
 		brute.set("aggro_target", null)
 		player.hp = player.max_hp
 		player.protect_t = 0.0
-		player.global_position = brute.global_position + Vector3(5.0, 0.0, 0.0)
+		# Llano para cazar: el punto con menos pendiente en radio 30 m.
+		var flat := Vector3(0, 0.5, 0)
+		var best := 999.0
+		for gx in range(-30, 31, 5):
+			for gz in range(-30, 31, 5):
+				var h0 = ground_height(gx, gz)
+				var hx = ground_height(gx + 2, gz)
+				var hz = ground_height(gx, gz + 2)
+				if h0 == null or hx == null or hz == null:
+					continue
+				var sl = absf(hx - h0) / 2.0 + absf(hz - h0) / 2.0
+				if sl < best:
+					best = sl
+					flat = Vector3(gx, h0 + 0.5, gz)
+		brute.global_position = flat
+		brute.velocity = Vector3.ZERO
+		player.global_position = flat + Vector3(5.0, 0.5, 0.0)
 		for i in 60:
 			await get_tree().physics_frame
 		_check(brute.get("aggro_target") == player, "proximidad 5m fija agro")

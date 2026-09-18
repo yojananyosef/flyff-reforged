@@ -86,6 +86,7 @@ mesh = SubResource("body_mesh")
 
 [node name="CamPivot" type="Node3D" parent="Player"]
 position = Vector3(0, 1.4, 0)
+rotation = Vector3(0, 3.14159265, 0)
 
 [node name="SpringArm3D" type="SpringArm3D" parent="Player/CamPivot"]
 spring_length = 6.5

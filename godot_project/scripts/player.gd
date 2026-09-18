@@ -487,6 +487,11 @@ func _respawn() -> void:
 	var game_data := get_node_or_null("/root/GameData")
 	if game_data != null:
 		global_position = game_data.get_zone_spawn()
+		var main = get_tree().current_scene
+		if main != null and main.has_method("ground_height"):
+			var gy = main.ground_height(global_position.x, global_position.z)
+			if gy != null:
+				global_position.y = gy + 0.5
 	hp = max_hp
 	mp = max_mp
 	velocity = Vector3.ZERO
