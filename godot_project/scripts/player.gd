@@ -37,6 +37,7 @@ var equipment: Dictionary = {"weapon": "", "armor": ""}
 var cooldown_left: Dictionary = {"skill_001": 0.0, "skill_002": 0.0, "skill_003": 0.0}
 var bulwark_time: float = 0.0
 var use_cooldown: float = 0.0
+var target: Node3D = null  # objetivo fijado con clic (grupo "monsters")
 
 @onready var cam_pivot: Node3D = $CamPivot
 @onready var spring: SpringArm3D = $CamPivot/SpringArm3D
@@ -62,7 +63,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
 			if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-				attack()
+				var picked := _pick_monster()
+				if picked != null:
+					target = picked
+					print("[Player] objetivo: %s" % picked.get("display_name"))
+				attack(picked)
 	elif event is InputEventKey and event.pressed and not event.echo:
 		# Gancho de prueba: F1 inflige 10 de dano para ver el HUD (tarea 3.3).
 		if event.physical_keycode == KEY_F1:
@@ -91,6 +96,8 @@ func _physics_process(delta: float) -> void:
 			_refresh_bulwark_tint()
 	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = jump_velocity
+	if target != null and not is_instance_valid(target):
+		target = null
 
 	var input_dir := Vector2(
 		Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
@@ -113,16 +120,76 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 
-func attack() -> void:
-	## Golpe basico al monstruo mas cercano (formula fisica, poder 0).
+func attack(only: Node3D = null) -> bool:
+	## Golpe básico. Con `only` (clic a un monstruo) exige rango y avisa si
+	## no llega; sin `only` prioriza el objetivo fijado en rango y si no hay,
+	## el más cercano como antes. Propaga atacante para el agro.
 	_audio().play_sfx("swing")
-	var best: Node3D = _nearest_monster(attack_range)
-	if best != null and best.has_method("take_damage"):
-		var dmg := phys_damage(attack_stat(), 0.0, best.get("defense"))
-		best.take_damage(dmg)
+	var victim: Node3D = null
+	if only != null:
+		if not is_instance_valid(only) or not only.is_in_group("monsters"):
+			return false
+		if global_position.distance_to(only.global_position) > attack_range:
+			print("[Player] objetivo fuera de alcance")
+			return false
+		victim = only
+	else:
+		victim = _target_in_range(attack_range)
+		if victim == null:
+			victim = _nearest_monster(attack_range)
+	if victim == null:
+		return false
+	if victim.has_method("take_damage"):
+		var dmg := phys_damage(attack_stat(), 0.0, victim.get("defense"))
+		victim.take_damage(dmg, self)
 		_audio().play_sfx("hit")
 		_audio().notify_combat()
-		print("[Player] golpe a %s (%.0f dmg)" % [best.get("monster_id"), dmg])
+		print("[Player] golpe a %s (%.0f dmg)" % [victim.get("monster_id"), dmg])
+		return true
+	return false
+
+
+func _target_in_range(max_range: float) -> Node3D:
+	if target == null:
+		return null
+	if not is_instance_valid(target) or not target.is_in_group("monsters"):
+		target = null
+		return null
+	if global_position.distance_to(target.global_position) > max_range:
+		return null
+	return target
+
+
+func _pick_monster() -> Node3D:
+	## Rayo desde el centro de pantalla (punto de mira) hasta 100 m.
+	## Centro y no posición del clic: con pointer-lock la posición del
+	## evento no es fiable en web.
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return null
+	var center := get_viewport().get_visible_rect().size / 2.0
+	var origin := cam.project_ray_origin(center)
+	var end := origin + cam.project_ray_normal(center) * 100.0
+	var query := PhysicsRayQueryParameters3D.create(origin, end)
+	query.exclude = [get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	var collider = hit.get("collider")
+	if collider != null and (collider as Node).is_in_group("monsters"):
+		return collider as Node3D
+	# Tolerancia: el rayo exacto falla con bichos pequeños en movimiento;
+	# se acepta el monstruo visible más cercano al punto de mira (140 px).
+	var best: Node3D = null
+	var best_d := 140.0
+	for m in get_tree().get_nodes_in_group("monsters"):
+		var n := m as Node3D
+		if n == null or cam.is_position_behind(n.global_position):
+			continue
+		var d: float = cam.unproject_position(
+			n.global_position + Vector3(0, 1.0, 0)).distance_to(center)
+		if d < best_d:
+			best_d = d
+			best = n
+	return best
 
 
 func take_damage(amount: float) -> void:
@@ -299,6 +366,7 @@ func _respawn() -> void:
 	hp = max_hp
 	mp = max_mp
 	velocity = Vector3.ZERO
+	target = null
 	print("[Player] resucitado en el punto de spawn")
 
 
@@ -351,18 +419,20 @@ func cast_skill(skill_id: String) -> bool:
 		return false
 	var cost := float(def.get("mp_cost", 0))
 	if skill_id == "skill_001":
-		var target: Node3D = _nearest_monster(float(SKILL_TIMES["skill_001"]["range"]))
-		if target == null:
+		var foe: Node3D = _target_in_range(float(SKILL_TIMES["skill_001"]["range"]))
+		if foe == null:
+			foe = _nearest_monster(float(SKILL_TIMES["skill_001"]["range"]))
+		if foe == null:
 			return false  # whiff: no consume nada
 		mp -= cost
 		cooldown_left[skill_id] = skill_cooldown_max(skill_id)
 		var dmg := phys_damage(attack_stat(), float(def.get("power", 0)) + EMBER_POWER_BONUS,
-			target.get("defense"))
-		target.take_damage(dmg)
+			foe.get("defense"))
+		foe.take_damage(dmg, self)
 		_audio().play_sfx("swing")
 		_audio().play_sfx("hit")
 		_audio().notify_combat()
-		print("[Player] Ember Slash a %s (%.0f dmg)" % [target.get("monster_id"), dmg])
+		print("[Player] Ember Slash a %s (%.0f dmg)" % [foe.get("monster_id"), dmg])
 	elif skill_id == "skill_002":
 		mp -= cost
 		cooldown_left[skill_id] = skill_cooldown_max(skill_id)

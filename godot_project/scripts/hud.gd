@@ -9,6 +9,8 @@ var _inventory_seen_version := -1
 var _skill_slots: Dictionary = {}  # skill_id -> {"bar": .., "name": .., "key": ..}
 var _debug_on := false
 var _debug_label: Label
+var _crosshair: Label
+var _target_label: Label
 
 const SHOP_STOCK := ["item_003", "item_004", "item_001", "item_002"]
 var shop_open := false
@@ -64,6 +66,33 @@ func _ready() -> void:
 	_debug_label.offset_bottom = 480.0
 	_debug_label.visible = false
 	add_child(_debug_label)
+	_crosshair = Label.new()
+	_crosshair.name = "Crosshair"
+	_crosshair.text = "+"
+	_crosshair.add_theme_font_size_override("font_size", 28)
+	_crosshair.anchor_left = 0.5
+	_crosshair.anchor_right = 0.5
+	_crosshair.anchor_top = 0.5
+	_crosshair.anchor_bottom = 0.5
+	_crosshair.offset_left = -10.0
+	_crosshair.offset_right = 10.0
+	_crosshair.offset_top = -20.0
+	_crosshair.offset_bottom = 20.0
+	_crosshair.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_crosshair)
+	_target_label = Label.new()
+	_target_label.name = "TargetLabel"
+	_target_label.text = "Objetivo: -"
+	_target_label.anchor_left = 0.5
+	_target_label.anchor_right = 0.5
+	_target_label.anchor_top = 1.0
+	_target_label.anchor_bottom = 1.0
+	_target_label.offset_left = -190.0
+	_target_label.offset_right = 190.0
+	_target_label.offset_top = -92.0
+	_target_label.offset_bottom = -68.0
+	_target_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_target_label)
 	equip_button.pressed.connect(_on_equip_pressed)
 	unequip_button.pressed.connect(_on_unequip_pressed)
 	use_button.pressed.connect(_on_use_pressed)
@@ -95,6 +124,7 @@ func _process(_delta: float) -> void:
 	_sync_bar(exp_bar, exp_label, p.exp, p.max_exp)
 	_sync_quest()
 	_sync_skills(p)
+	_sync_target(p)
 	_sync_debug(p)
 	if p.use_cooldown > 0.0:
 		use_button.disabled = true
@@ -409,6 +439,15 @@ func _sync_skills(p) -> void:
 		elif sid == "skill_002" and p.bulwark_time > 0.0:
 			txt += " (ACTIVO)"
 		label.text = txt
+
+
+func _sync_target(p) -> void:
+	var t = p.get("target")
+	if t != null and is_instance_valid(t):
+		_target_label.text = "Objetivo: %s  %d/%d" % [
+			str(t.get("display_name")), int(t.get("hp")), int(t.get("max_hp"))]
+	else:
+		_target_label.text = "Objetivo: -"
 
 
 func _sync_debug(p) -> void:

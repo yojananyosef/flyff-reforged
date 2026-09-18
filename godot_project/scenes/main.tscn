@@ -220,7 +220,7 @@ offset_top = 120.0
 offset_right = 310.0
 offset_bottom = 156.0
 theme_override_font_sizes/font_size = 14
-text = "WASD + Espacio · Clic · 1/2/3 · E hablar
+text = "WASD + Espacio · Clic fijar/atacar · 1/2/3 · E hablar
 I bolsa · M mute · F5 guardar · F8 nueva"
 autowrap_mode = 2
 

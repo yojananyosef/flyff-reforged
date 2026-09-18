@@ -1,0 +1,29 @@
+[     836ms] [LOG] Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org @ http://127.0.0.1:8903/index.js:451
+[    1111ms] [LOG] OpenGL API OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium)) - Compatibility - Using Device: WebKit - WebKit WebGL @ http://127.0.0.1:8903/index.js:451
+[    1300ms] [LOG] Build configuration: Emscripten 4.0.20, single-threaded, no GDExtension support. @ http://127.0.0.1:8903/index.js:451
+[    1377ms] [LOG] [GameData] cargado res://data/zones.json (1 entradas) @ http://127.0.0.1:8903/index.js:451
+[    1378ms] [LOG] [GameData] cargado res://data/dialogues.json (2 entradas) @ http://127.0.0.1:8903/index.js:451
+[    1380ms] [LOG] [GameData] cargado res://data/items.json (10 entradas) @ http://127.0.0.1:8903/index.js:451
+[    1381ms] [LOG] [GameData] cargado res://data/monsters.json (5 entradas) @ http://127.0.0.1:8903/index.js:451
+[    1383ms] [LOG] [GameData] cargado res://data/npcs.json (2 entradas) @ http://127.0.0.1:8903/index.js:451
+[    1384ms] [LOG] [GameData] cargado res://data/quests.json (10 entradas) @ http://127.0.0.1:8903/index.js:451
+[    1385ms] [LOG] [GameData] cargado res://data/skills.json (3 entradas) @ http://127.0.0.1:8903/index.js:451
+[    1386ms] [LOG] [GameData] zona actual: ironhold (Ironhold) @ http://127.0.0.1:8903/index.js:451
+[    1389ms] [LOG] [Audio] 16/16 archivos presentes @ http://127.0.0.1:8903/index.js:451
+[    1391ms] [LOG] [HUD] zona mostrada: Ironhold @ http://127.0.0.1:8903/index.js:451
+[    1393ms] [LOG] [HUD] barra de skills: 3 slots @ http://127.0.0.1:8903/index.js:451
+[    1395ms] [LOG] [HUD] tienda construida (4 stock) @ http://127.0.0.1:8903/index.js:451
+[    1403ms] [LOG] [Main] arranque OK. Zona: ironhold (Ironhold) @ http://127.0.0.1:8903/index.js:451
+[    1454ms] [LOG] [Main] 9 monstruos generados @ http://127.0.0.1:8903/index.js:451
+[   14654ms] [LOG] [Player] resucitado en el punto de spawn @ http://127.0.0.1:8903/index.js:451
+[   23019ms] [LOG] [Player] resucitado en el punto de spawn @ http://127.0.0.1:8903/index.js:451
+[   35892ms] [LOG] [Player] resucitado en el punto de spawn @ http://127.0.0.1:8903/index.js:451
+[   38907ms] [LOG] [Player] objetivo: Cinder Hare @ http://127.0.0.1:8903/index.js:451
+[   38917ms] [LOG] [Player] golpe a mon_001 (5 dmg) @ http://127.0.0.1:8903/index.js:451
+[   41432ms] [LOG] [Player] objetivo: Cinder Hare @ http://127.0.0.1:8903/index.js:451
+[   41440ms] [LOG] [Player] golpe a mon_001 (5 dmg) @ http://127.0.0.1:8903/index.js:451
+[   50900ms] [LOG] [Player] resucitado en el punto de spawn @ http://127.0.0.1:8903/index.js:451
+[   63072ms] [LOG] [Player] resucitado en el punto de spawn @ http://127.0.0.1:8903/index.js:451
+[   72826ms] [LOG] [Player] resucitado en el punto de spawn @ http://127.0.0.1:8903/index.js:451
+[   83667ms] [LOG] [Player] resucitado en el punto de spawn @ http://127.0.0.1:8903/index.js:451
+[   93437ms] [LOG] [Player] resucitado en el punto de spawn @ http://127.0.0.1:8903/index.js:451

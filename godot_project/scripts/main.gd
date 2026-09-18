@@ -387,6 +387,74 @@ func _run_sim() -> void:
 			await get_tree().physics_frame
 		_check(bool(hare2.get("_attacked_anim")), "liebre reproduce atk al golpear")
 
+	# --- agro + target (aethermere-aggro-target) ---
+	var wisp: Node3D = null
+	for m in get_tree().get_nodes_in_group("monsters"):
+		if m.get("monster_id") == "mon_003" and not m.get("_dead"):
+			wisp = m
+			break
+	_check(wisp != null, "existe wisp vivo para agro por dano")
+	if wisp != null:
+		wisp.set("aggro_target", null)
+		wisp.take_damage(1.0, player)
+		_check(wisp.get("aggro_target") == player, "dano fija agro fuera de rango")
+
+	var brute: Node3D = null
+	for m in get_tree().get_nodes_in_group("monsters"):
+		if m.get("monster_id") == "mon_005" and not m.get("_dead"):
+			brute = m
+			break
+	_check(brute != null, "existe lobo vivo para agro")
+	if brute != null:
+		brute.set("aggro_target", null)
+		player.global_position = brute.global_position + Vector3(5.0, 0.0, 0.0)
+		for i in 60:
+			await get_tree().physics_frame
+		_check(brute.get("aggro_target") == player, "proximidad 5m fija agro")
+		var d0: float = brute.global_position.distance_to(player.global_position)
+		for i in 60:
+			await get_tree().physics_frame
+		var d1: float = brute.global_position.distance_to(player.global_position)
+		_check(d1 < d0 - 0.5, "persecucion acerca (%.1f -> %.1f)" % [d0, d1])
+		player.global_position = brute.global_position + Vector3(30.0, 0.0, 0.0)
+		for i in 30:
+			await get_tree().physics_frame
+		_check(brute.get("aggro_target") == null, "leash 14m suelta agro")
+
+	var tgt1: Node3D = null
+	var tgt2: Node3D = null
+	for m in get_tree().get_nodes_in_group("monsters"):
+		if m.get("monster_id") == "mon_001" and not m.get("_dead"):
+			if tgt1 == null:
+				tgt1 = m
+			elif tgt2 == null:
+				tgt2 = m
+				break
+	_check(tgt1 != null and tgt2 != null, "dos liebres vivas para target")
+	if tgt1 != null and tgt2 != null:
+		tgt1.set("hp", 30.0)
+		tgt2.set("hp", 30.0)
+		player.global_position = Vector3(0, 0.5, 0)
+		tgt1.global_position = player.global_position + Vector3(2.0, 0.0, 0.0)
+		tgt2.global_position = player.global_position + Vector3(1.0, 0.0, 0.0)
+		player.target = tgt1
+		player.attack()
+		_check(is_equal_approx(tgt1.hp, 22.0) and is_equal_approx(tgt2.hp, 30.0),
+			"basico pega al objetivo a 2m, no al cercano (%.0f/%.0f)" % [tgt1.hp, tgt2.hp])
+		tgt1.global_position = player.global_position + Vector3(20.0, 0.0, 0.0)
+		var thp0: float = tgt1.hp
+		_check(not player.attack(tgt1), "objetivo lejos: solo se fija")
+		_check(is_equal_approx(tgt1.hp, thp0), "sin dano fuera de rango")
+		_check(player.target == tgt1, "objetivo lejano se conserva")
+		tgt1.take_damage(999.0)
+		var waited2 := 0
+		while is_instance_valid(tgt1) and waited2 < 400:
+			await get_tree().process_frame
+			waited2 += 1
+		for i in 5:
+			await get_tree().physics_frame
+		_check(player.target == null, "objetivo muerto se limpia")
+
 	if _failures.is_empty():
 		print("SIM-QUEST PASS")
 		get_tree().quit(0)

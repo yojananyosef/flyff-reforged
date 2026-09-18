@@ -23,6 +23,12 @@ var _touch_cooldown: float = 0.0
 var _attacking := false
 var _attacked_anim := false  # gancho de sim: true si reprodujo un clip atk
 
+## Agro: proximidad 6 m, leash 14 m, persecución a 2.8 m/s.
+const AGGRO_RANGE := 6.0
+const LEASH_RANGE := 14.0
+const CHASE_SPEED := 2.8
+var aggro_target: Node3D = null
+
 @onready var name_label: Label3D = $NameLabel
 
 
@@ -118,29 +124,57 @@ func _play_anim(candidates: Array, loop: bool) -> bool:
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity += get_gravity() * delta
-	_wander_timer -= delta
-	if _wander_timer <= 0.0:
-		_pick_direction()
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	_update_aggro(player)
+	var speed := wander_speed
+	if aggro_target != null:
+		# En combate: el paseo se suspende, caza al jugador.
+		var to: Vector3 = aggro_target.global_position - global_position
+		to.y = 0.0
+		if to.length() > 0.25:
+			_dir = to.normalized()
+		speed = CHASE_SPEED
+	else:
+		_wander_timer -= delta
+		if _wander_timer <= 0.0:
+			_pick_direction()
 	# Mira hacia la marcha (el cuerpo no lleva cámara: rotar es seguro).
 	if _dir.length() > 0.01:
 		rotation.y = lerp_angle(rotation.y, atan2(_dir.x, _dir.z), 8.0 * delta)
-	velocity.x = _dir.x * wander_speed
-	velocity.z = _dir.z * wander_speed
+	velocity.x = _dir.x * speed
+	velocity.z = _dir.z * speed
 	move_and_slide()
 
 	_touch_cooldown -= delta
-	var player := get_tree().get_first_node_in_group("player") as Node3D
 	if player != null and _touch_cooldown <= 0.0:
 		if global_position.distance_to(player.global_position) < 1.4:
 			_touch_cooldown = 1.0
+			aggro_target = player
 			_try_attack_anim()
 			if player.has_method("take_mob_damage"):
 				player.take_mob_damage(attack)
 
 
-func take_damage(amount: float) -> void:
+func _update_aggro(player: Node3D) -> void:
+	if _dead:
+		aggro_target = null
+		return
+	if aggro_target != null:
+		if not is_instance_valid(aggro_target) \
+				or global_position.distance_to(aggro_target.global_position) > LEASH_RANGE:
+			aggro_target = null
+			_pick_direction()
+		return
+	if player != null and global_position.distance_to(player.global_position) < AGGRO_RANGE:
+		aggro_target = player
+		_wander_timer = 1.0
+
+
+func take_damage(amount: float, from: Node3D = null) -> void:
 	if _dead:
 		return
+	if from != null and from.is_in_group("player"):
+		aggro_target = from
 	hp = clampf(hp - amount, 0.0, max_hp)
 	_refresh_label()
 	if hp <= 0.0:
