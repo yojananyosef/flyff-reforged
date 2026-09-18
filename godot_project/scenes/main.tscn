@@ -88,7 +88,7 @@ mesh = SubResource("body_mesh")
 position = Vector3(0, 1.4, 0)
 
 [node name="SpringArm3D" type="SpringArm3D" parent="Player/CamPivot"]
-spring_length = 5.0
+spring_length = 6.5
 
 [node name="Camera3D" type="Camera3D" parent="Player/CamPivot/SpringArm3D"]
 current = true
@@ -134,7 +134,7 @@ script = ExtResource("3")
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 330.0
-offset_bottom = 214.0
+offset_bottom = 228.0
 
 [node name="ZoneLabel" type="Label" parent="HUD/Panel"]
 offset_left = 10.0
@@ -194,15 +194,17 @@ text = "0 / 100"
 offset_left = 10.0
 offset_top = 120.0
 offset_right = 310.0
-offset_bottom = 162.0
-text = "WASD moverse · Espacio saltar · Clic atacar · 1/2/3 skills · E hablar · I inventario · M mute · F1 dano"
+offset_bottom = 156.0
+theme_override_font_sizes/font_size = 14
+text = "WASD + Espacio · Clic atacar · 1/2/3
+E hablar · I bolsa · M mute · F1 dano"
 autowrap_mode = 2
 
 [node name="QuestLabel" type="Label" parent="HUD/Panel"]
 offset_left = 10.0
-offset_top = 166.0
+offset_top = 162.0
 offset_right = 310.0
-offset_bottom = 206.0
+offset_bottom = 220.0
 text = "Sin misión activa"
 autowrap_mode = 2
 

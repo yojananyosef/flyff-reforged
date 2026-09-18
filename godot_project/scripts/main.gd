@@ -28,6 +28,8 @@ func _ready() -> void:
 		audio.play_zone_music()
 	if "--sim-quest" in OS.get_cmdline_user_args():
 		_run_sim.call_deferred()
+	if "--shot" in OS.get_cmdline_user_args():
+		_take_shot.call_deferred()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -105,7 +107,7 @@ func _spawn_one(container: Node3D, def: Dictionary, center: Vector3, idx: int) -
 
 	var label := Label3D.new()
 	label.name = "NameLabel"
-	label.position = Vector3(0, 1.8, 0)
+	label.position = Vector3(0, 1.8 + float(idx % 3) * 0.25, 0)
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.font_size = 48
 	m.add_child(label)
@@ -114,7 +116,6 @@ func _spawn_one(container: Node3D, def: Dictionary, center: Vector3, idx: int) -
 
 
 # --- Simulación headless ---
-
 func _check(cond: bool, msg: String) -> void:
 	if cond:
 		print("[SIM] ok: " + msg)
@@ -307,3 +308,33 @@ func _run_sim() -> void:
 	else:
 		print("SIM-QUEST FAIL: %s" % str(_failures))
 		get_tree().quit(1)
+
+
+func _take_shot() -> void:
+	## Gancho de prueba visual: prepara una escena opcional, espera ~2 s,
+	## captura la vista y sale. Uso: `-- --shot path.png [dlg|shop|inv]`.
+	var args := OS.get_cmdline_user_args()
+	var mode := ""
+	for a in args:
+		if a in ["dlg", "shop", "inv"]:
+			mode = a
+	if mode == "dlg":
+		player.global_position = Vector3(4, 0.5, 0.5)
+		dialogue.open("npc_001")
+	elif mode == "shop":
+		hud.open_shop()
+	elif mode == "inv":
+		player.add_item("item_005", 2)
+		hud._inventory_open = true
+		hud.inventory_panel.visible = true
+		hud._rebuild_inventory()
+	for i in 120:
+		await get_tree().process_frame
+	var img := get_viewport().get_texture().get_image()
+	var path := "/tmp/aethermere_shot.png"
+	var idx := args.find("--shot")
+	if idx != -1 and args.size() > idx + 1 and not args[idx + 1].begins_with("--"):
+		path = args[idx + 1]
+	img.save_png(path)
+	print("[SHOT] guardada en " + path)
+	get_tree().quit(0)
