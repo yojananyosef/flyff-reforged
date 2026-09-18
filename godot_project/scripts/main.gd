@@ -358,6 +358,35 @@ func _run_sim() -> void:
 	var moved: float = m0.distance_to(player.global_position)
 	_check(moved > 3.0, "WASD mueve al jugador (%.1f m en 1 s)" % moved)
 
+	# --- animaciones (aethermere-anim) ---
+	var modeled := 0
+	var walked := 0
+	for m in get_tree().get_nodes_in_group("monsters"):
+		if str(m.get("model_name")) == "":
+			continue
+		modeled += 1
+		var ap = m.get("_anim")
+		if ap != null and ap.is_playing():
+			var cur: String = ap.current_animation
+			if cur in ["walk", "Walk", "stand", "Stand", "idle1", "Idle1"]:
+				walked += 1
+	_check(modeled >= 7, "monstruos con modelo en escena (%d)" % modeled)
+	_check(walked == modeled, "locomocion en marcha (%d/%d)" % [walked, modeled])
+
+	var hare2: Node3D = null
+	for m in get_tree().get_nodes_in_group("monsters"):
+		if m.get("monster_id") == "mon_001" and not m.get("_dead"):
+			hare2 = m
+			break
+	_check(hare2 != null, "existe liebre viva para anim de ataque")
+	if hare2 != null:
+		player.hp = player.max_hp
+		for i in 200:
+			if is_instance_valid(hare2) and not hare2.get("_dead"):
+				player.global_position = hare2.global_position + Vector3(1.0, 0.0, 0.0)
+			await get_tree().physics_frame
+		_check(bool(hare2.get("_attacked_anim")), "liebre reproduce atk al golpear")
+
 	if _failures.is_empty():
 		print("SIM-QUEST PASS")
 		get_tree().quit(0)
