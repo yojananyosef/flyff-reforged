@@ -9,4 +9,4 @@
 - [x] 2.1 Captura en navegador (horizonte claro, dunas fundidas) +
   SIM-QUEST PASS
 - [x] 2.2 `openspec validate aethermere-day-sky --strict` OK
-- [ ] 2.3 Commit + push (+ rebuild web y deploy a gh-pages)
+- [x] 2.3 Commit + push (+ rebuild web y deploy a gh-pages)
