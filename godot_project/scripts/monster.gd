@@ -68,6 +68,9 @@ func _mount_model() -> void:
 		return
 	var inst = (packed as PackedScene).instantiate()
 	inst.name = "Model"
+	# Los .glb convertidos miran a -Z local (igual que PlayerMvr.glb):
+	# el cuerpo rota con atan2 (+Z) y el modelo compensa con +PI.
+	inst.rotation.y = PI
 	add_child(inst)
 	var body := get_node_or_null("Body")
 	if body != null:
@@ -78,24 +81,27 @@ func _mount_model() -> void:
 
 func _play_locomotion() -> void:
 	## Marcha en bucle; repliegue a stand si el modelo no trae walk.
+	## El ataque tiene prioridad: mientras _attacking no se pisa el clip.
+	if _attacking:
+		return
 	if _play_anim(["walk", "Walk"], true):
 		return
 	_play_anim(["stand", "Stand", "idle1", "Idle1", "idle", "Default"], true)
 
 
 func _try_attack_anim() -> void:
-	## Un clip atk* por golpe; al terminar vuelve a la locomoción.
-	## Sin clip (loro) no hay animación pero el daño se aplica igual.
+	## Un clip atk* por golpe con prioridad sobre la locomoción; al
+	## terminar vuelve a ella. Se espera a animation_finished (el bucle
+	## is_playing+tope heredado dejaba _attacking pegado si un stand en
+	## bucle pisaba el clip). Sin clip (loro) no hay animación pero el
+	## daño se aplica igual.
 	if _attacking or _anim == null or _dead:
 		return
 	if not _play_anim(["atk1", "atk2", "att1", "att2", "Atk1", "Atk2"], false):
 		return
 	_attacking = true
 	_attacked_anim = true
-	var frames := 0
-	while _anim.is_playing() and frames < 300 and not _dead:
-		await get_tree().process_frame
-		frames += 1
+	await _anim.animation_finished
 	_attacking = false
 	if _dead:
 		return

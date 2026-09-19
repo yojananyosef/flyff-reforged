@@ -725,6 +725,16 @@ func _run_sim() -> void:
 	Input.action_release("move_forward")
 	var moved: float = m0.distance_to(player.global_position)
 	_check(moved > 3.0, "WASD mueve al jugador (%.1f m en 1 s)" % moved)
+	# El .glb mira a -Z: con MODEL_YAW (+PI) la malla encara la orden de
+	# marcha. Se compara contra la dirección ordenada (no contra el
+	# desplazamiento neto: en pendiente el cuerpo derrapa y no coincide).
+	var pmodel: Node3D = player.get_node_or_null("Model")
+	if pmodel != null:
+		var cam_yaw: float = (player.get_node("CamPivot") as Node3D).global_rotation.y
+		var cmd: Vector3 = Basis(Vector3.UP, cam_yaw) * Vector3(0.0, 0.0, -1.0)
+		var want_march: float = atan2(cmd.x, cmd.z) + PI
+		_check(absf(wrapf(pmodel.rotation.y - want_march, -PI, PI)) < 0.5,
+			"avatar encara la marcha (sin moonwalk)")
 
 	# --- animaciones (aethermere-anim) ---
 	var modeled := 0
@@ -925,13 +935,18 @@ func _run_sim() -> void:
 		_check(is_equal_approx(brute.hp, c0 - 5.0), "solo un impacto (%.0f)" % brute.hp)
 		if player.get("_anim") != null:
 			_check(bool(player.get("_attacked_anim")), "avatar reproduce atk1 al golpear")
+			_check(str(player.get("_anim").current_animation) == "atk1",
+				"atk1 con prioridad sobre stand al golpear")
 		var vis: Node3D = player.get_node_or_null("Model")
+		# El .glb mira a -Z local: player.gd lo compensa con +PI; la
+		# cápsula de repliegue (simétrica) no lleva compensación.
+		var yaw_off := PI if vis != null else 0.0
 		if vis == null:
 			vis = player.get_node("MeshInstance3D") as Node3D
 		if vis != null and is_instance_valid(brute):
 			var tb: Vector3 = brute.global_position - player.global_position
 			var want: float = atan2(tb.x, tb.z)
-			_check(absf(wrapf(want - vis.rotation.y, -PI, PI)) < 0.5,
+			_check(absf(wrapf(want - (vis.rotation.y - yaw_off), -PI, PI)) < 0.5,
 				"avatar encara al golpear")
 	else:
 		_check(false, "lobo vivo para auto-ataque")

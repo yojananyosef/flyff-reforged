@@ -51,6 +51,10 @@ var _rmb_held := false  # freelook: cámara solo mientras se mantiene RMB
 
 ## Avatar FlyFF (aethermere-player-avatar): modelo montado si existe
 ## `models/PlayerMvr.glb`; si no, cápsula azul + punch de escala.
+## Los .glb convertidos miran a -Z local (verificado en PlayerMvr.glb:
+## pies zmin -0.24 vs zmax +0.14, nariz zmin -0.14, pelo centrado +0.08
+## respecto a la cabeza): MODEL_YAW los encara al +Z que usa atan2.
+const MODEL_YAW := PI
 var _model: Node3D = null
 var _anim: AnimationPlayer = null
 var _attacking := false
@@ -133,6 +137,9 @@ func _play_anim(candidates: Array, loop: bool) -> bool:
 
 func _play_locomotion() -> void:
 	## walk en marcha, stand en reposo (el .glb trae ambos + atk1).
+	## El ataque tiene prioridad: mientras _attacking no se pisa el clip.
+	if _attacking:
+		return
 	if _moving:
 		if _play_anim(["walk", "Walk"], true):
 			return
@@ -140,17 +147,17 @@ func _play_locomotion() -> void:
 
 
 func _try_attack_anim() -> void:
-	## Un atk1 por golpe; al terminar vuelve a la locomoción.
+	## Un atk1 por golpe con prioridad sobre la locomoción; al terminar
+	## vuelve a walk/stand. Se espera a animation_finished (no a
+	## is_playing con tope de frames: con stand en bucle el flag nunca
+	## caía y _attacking quedaba pegado ~5 s, tragándose ataques).
 	if _attacking or _anim == null:
 		return
 	if not _play_anim(["atk1", "Atk1", "atk2", "att1"], false):
 		return
 	_attacking = true
 	_attacked_anim = true
-	var frames := 0
-	while _anim.is_playing() and frames < 300:
-		await get_tree().process_frame
-		frames += 1
+	await _anim.animation_finished
 	_attacking = false
 	_play_locomotion()
 
@@ -250,7 +257,7 @@ func _physics_process(delta: float) -> void:
 		# al pulsar A/D (bug: parecia que se movia la camara y no el pj).
 		var yaw := atan2(dir.x, dir.z) - rotation.y
 		if _model != null:
-			_model.rotation.y = lerp_angle(_model.rotation.y, yaw, 10.0 * delta)
+			_model.rotation.y = lerp_angle(_model.rotation.y, yaw + MODEL_YAW, 10.0 * delta)
 		if body_mesh.visible:
 			body_mesh.rotation.y = lerp_angle(body_mesh.rotation.y, yaw, 10.0 * delta)
 		if not _moving:
@@ -327,7 +334,7 @@ func _face(p: Vector3) -> void:
 		return
 	var yaw := atan2(to.x, to.z) - rotation.y
 	if _model != null:
-		_model.rotation.y = yaw
+		_model.rotation.y = yaw + MODEL_YAW
 	if body_mesh.visible:
 		body_mesh.rotation.y = yaw
 
