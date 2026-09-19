@@ -28,6 +28,7 @@ func _ready() -> void:
 		player.position.y = psy + 0.5
 	npc_setup()
 	_spawn_monsters(game_data)
+	_load_props()
 	var audio = get_node_or_null("/root/AudioManager")
 	if audio != null:
 		audio.play_zone_music()
@@ -416,6 +417,42 @@ func _first_mesh(n: Node) -> MeshInstance3D:
 	return null
 
 
+func _load_props() -> void:
+	## Estructuras del campamento (aethermere-props): .glb de
+	## setup_props.py con snap al suelo y colisión trimesh estática.
+	## Sin archivos generados no crea nada (repliegue).
+	var game_data := get_node_or_null("/root/GameData")
+	if game_data == null:
+		return
+	var zone: Dictionary = game_data.zones.get(game_data.current_zone_id, {})
+	var container := Node3D.new()
+	container.name = "Props"
+	add_child(container)
+	for p in zone.get("props", []):
+		var path := "res://models/" + str(p.get("model", "")) + ".glb"
+		if not ResourceLoader.exists(path):
+			continue
+		var packed = load(path)
+		if not (packed is PackedScene):
+			continue
+		var inst := (packed as PackedScene).instantiate() as Node3D
+		var px := float(p.get("x", 0.0))
+		var pz := float(p.get("z", 0.0))
+		var gy = ground_height(px, pz)
+		inst.position = Vector3(px, (gy if gy != null else 0.5), pz)
+		inst.rotation.y = float(p.get("yaw", 0.0))
+		container.add_child(inst)
+		_add_trimesh(inst)
+	print("[Props] %d estructuras" % container.get_child_count())
+
+
+func _add_trimesh(n: Node) -> void:
+	if n is MeshInstance3D:
+		(n as MeshInstance3D).create_trimesh_collision()
+	for c in n.get_children():
+		_add_trimesh(c)
+
+
 # --- Simulación headless ---
 func _check(cond: bool, msg: String) -> void:
 	if cond:
@@ -504,6 +541,49 @@ func _run_sim() -> void:
 		_check(trunks != null, "arboles instanciados")
 	else:
 		_check(gr == null, "sin hierba sin puestos")
+
+	# --- props (aethermere-props; campamento con colisión) ---
+	var props_node := get_node_or_null("Props")
+	var want_props := 0
+	var zone_props: Array = game_data.zones.get(
+		game_data.current_zone_id, {}).get("props", [])
+	for p in zone_props:
+		if ResourceLoader.exists(
+				"res://models/" + str(p.get("model", "")) + ".glb"):
+			want_props += 1
+	var got_props := 0
+	var got_bodies := 0
+	if props_node != null:
+		got_props = props_node.get_child_count()
+		got_bodies = props_node.find_children(
+			"*", "StaticBody3D", true, false).size()
+	_check(got_props == want_props, "props instanciados (%d)" % got_props)
+	_check(got_bodies >= want_props, "props con colisión (%d)" % got_bodies)
+	if want_props > 0 and props_node != null and props_node.get_child_count() > 0:
+		# Caminata contra la primera tienda sin perturbar el resto del
+		# sim: gracia prestada (sin agro ni daño), sin objetivo, y se
+		# restaura todo al terminar.
+		var tent := props_node.get_child(0) as Node3D
+		var pt := float(player.get("protect_t"))
+		var tgt = player.get("target")
+		var auto := bool(player.get("auto_attack"))
+		player.protect_t = 60.0
+		player.target = null
+		player.auto_attack = false
+		player.global_position = tent.global_position + Vector3(5.0, 1.0, 0.0)
+		player.velocity = Vector3.ZERO
+		player._set_dest(tent.global_position)
+		for i in 180:
+			await get_tree().physics_frame
+		var dp: float = Vector2(
+			player.global_position.x - tent.global_position.x,
+			player.global_position.z - tent.global_position.z).length()
+		_check(dp > 1.0, "muro/tienda bloquea (a %.2f m)" % dp)
+		player.has_dest = false
+		player.protect_t = pt
+		player.target = tgt
+		player.auto_attack = auto
+		player.hp = player.max_hp
 
 	# --- proteccion (aethermere-spawn-safe; gracia fresca de _ready) ---
 	player.hp = player.max_hp

@@ -7,6 +7,13 @@
     "level_range": [1, 5],
     "npcs": ["npc_001", "npc_002"],
     "monsters": ["mon_001", "mon_002", "mon_003", "mon_004", "mon_005"],
-    "spawn_point": [0, 1, 0]
+    "spawn_point": [0, 1, 0],
+    "props": [
+      {"model": "Obj_EliunTent01", "x": -7.0, "z": 5.0, "yaw": 0.5},
+      {"model": "Obj_EliunTent02", "x": 7.0, "z": 4.0, "yaw": -0.4},
+      {"model": "Obj_BeheBasicwall01", "x": -4.0, "z": -6.0, "yaw": 0.0},
+      {"model": "Obj_BeheBasicwall01", "x": 0.0, "z": -7.0, "yaw": 0.3},
+      {"model": "Obj_BeheBasicwall01", "x": 4.0, "z": -6.0, "yaw": -0.2}
+    ]
   }
 ]
