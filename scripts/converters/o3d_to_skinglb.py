@@ -82,7 +82,8 @@ class GlbWriter:
         return idx
 
 
-def build(o3d_path: str | list[str], chr_path: str, ani_paths: list[str]) -> bytes:
+def build(o3d_path: str | list[str], chr_path: str, ani_paths: list[str],
+          tex_dir: str | None = None) -> bytes:
     o3d_paths = [o3d_path] if isinstance(o3d_path, str) else list(o3d_path)
     parsed = [parse_o3d(p) for p in o3d_paths]
     multi = len(parsed) > 1
@@ -114,17 +115,52 @@ def build(o3d_path: str | list[str], chr_path: str, ani_paths: list[str]) -> byt
     meshes: list[dict] = []
     mesh_nodes: list[int] = []
     materials: list[dict] = []
+    images: list[dict] = []
+    samplers: list[dict] = []
+    textures: list[dict] = []
     ub_cache: dict[str, int] = {}
+    tex_cache: dict[str, int] = {}  # base .dds en minusculas -> indice en textures
+
+    # PNGs preparados por setup_model_textures.py (DDS del cliente -> RGBA).
+    pngs: dict[str, bytes] = {}
+    if tex_dir and os.path.isdir(tex_dir):
+        for fn in sorted(os.listdir(tex_dir)):
+            if fn.lower().endswith(".png"):
+                with open(os.path.join(tex_dir, fn), "rb") as f:
+                    pngs[os.path.splitext(fn)[0].lower()] = f.read()
+
+    def texture_of(tex: str) -> int | None:
+        """Embebe el PNG de una textura FlyFF o devuelve None (repliegue)."""
+        key = os.path.splitext(os.path.basename(tex))[0].lower()
+        if key in tex_cache:
+            return tex_cache[key]
+        if key not in pngs:
+            print(f"aviso: sin PNG para {tex} (pieza en blanco)")
+            return None
+        img_view = w.add_view(pngs[key])
+        images.append({"bufferView": img_view, "mimeType": "image/png",
+                       "name": key})
+        if not samplers:
+            samplers.append({"magFilter": 9729, "minFilter": 9987,
+                             "wrapS": 10497, "wrapT": 10497})
+        textures.append({"source": len(images) - 1, "sampler": 0})
+        tex_cache[key] = len(textures) - 1
+        return tex_cache[key]
 
     def material(tex: str, tag: str) -> int:
         key = tag + "|" + tex
         if key in ub_cache:
             return ub_cache[key]
         idx = len(materials)
+        pbr: dict = {"baseColorFactor": [1, 1, 1, 1],
+                     "metallicFactor": 0.0, "roughnessFactor": 0.9}
+        if tex:
+            ti = texture_of(tex)
+            if ti is not None:
+                pbr["baseColorTexture"] = {"index": ti, "texCoord": 0}
         materials.append({
             "name": tag,
-            "pbrMetallicRoughness": {"baseColorFactor": [1, 1, 1, 1],
-                                     "metallicFactor": 0.0, "roughnessFactor": 0.9},
+            "pbrMetallicRoughness": pbr,
             "extras": {"flyff_texture": tex}})
         ub_cache[key] = idx
         return idx
@@ -250,6 +286,10 @@ def build(o3d_path: str | list[str], chr_path: str, ani_paths: list[str]) -> byt
         "bufferViews": w.views,
         "buffers": [{"byteLength": len(w.bin)}],
     }
+    if images:
+        gltf["images"] = images
+        gltf["samplers"] = samplers
+        gltf["textures"] = textures
 
     def pad(data: bytes, char: bytes) -> bytes:
         return data + char * (-len(data) % 4)
@@ -270,13 +310,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--chr", required=True)
     ap.add_argument("--anis", required=True, help="Patron glob de .ani")
     ap.add_argument("--output", required=True)
+    ap.add_argument("--tex-dir", default=None,
+                    help="Dir con <textura>.png (DDS del cliente ya convertidos)")
     args = ap.parse_args(argv)
     anis = sorted(glob.glob(args.anis))
     if not anis:
         print(f"sin animaciones: {args.anis}", file=sys.stderr)
         return 1
     try:
-        glb = build(args.o3d, args.chr, anis)
+        glb = build(args.o3d, args.chr, anis, args.tex_dir)
     except (OSError, ValueError, struct.error) as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 1

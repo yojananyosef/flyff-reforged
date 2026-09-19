@@ -55,6 +55,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Prepara el avatar del jugador desde el cliente")
     ap.add_argument("--client", required=True, help="Directorio 'app' del cliente extraido")
     ap.add_argument("--out", required=True, help="Destino (godot_project/models)")
+    ap.add_argument("--tex-dir", default=None,
+                    help="Dir con <textura>.png para embeber (ver setup_model_textures.py)")
     args = ap.parse_args(argv)
 
     model_dir = os.path.join(args.client, "Model")
@@ -82,6 +84,8 @@ def main(argv: list[str] | None = None) -> int:
             cmd += ["--o3d", os.path.join(model_dir, p)]
         cmd += ["--chr", chr_f, "--anis", os.path.join(tmp, "*.ani"),
                 "--output", os.path.join(args.out, OUTPUT)]
+        if args.tex_dir:
+            cmd += ["--tex-dir", args.tex_dir]
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0 or not os.path.isfile(os.path.join(args.out, OUTPUT)):
             print(f"ERROR conversor: {r.stderr.strip()[:300]}", file=sys.stderr)

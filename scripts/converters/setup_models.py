@@ -26,6 +26,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--client", required=True, help="Directorio 'app' del cliente extraido")
     ap.add_argument("--data", required=True, help="Directorio data/ con monsters.json")
     ap.add_argument("--out", required=True, help="Destino (godot_project/models)")
+    ap.add_argument("--tex-dir", default=None,
+                    help="Dir con <textura>.png para embeber (ver setup_model_textures.py)")
     args = ap.parse_args(argv)
 
     with open(os.path.join(args.data, "monsters.json"), encoding="utf-8") as f:
@@ -45,7 +47,8 @@ def main(argv: list[str] | None = None) -> int:
             [sys.executable, os.path.join(_HERE, "o3d_to_skinglb.py"),
              "--o3d", o3d, "--chr", chr_f,
              "--anis", os.path.join(args.client, "Model", model + "_*.ani"),
-             "--output", out],
+             "--output", out] + (["--tex-dir", args.tex_dir]
+                                 if args.tex_dir else []),
             capture_output=True, text=True)
         if r.returncode != 0 or not os.path.isfile(out):
             missing.append(f"{m.get('id')}: conversor fallo ({r.stderr.strip()[:200]})")
