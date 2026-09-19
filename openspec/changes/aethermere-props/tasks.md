@@ -18,4 +18,4 @@
 - [x] 3.1 Captura en navegador (campamento con tiendas/muros) +
   SIM-QUEST PASS (props presentes, colisión bloquea)
 - [x] 3.2 `openspec validate aethermere-props --strict` OK
-- [ ] 3.3 Commit + push (+ rebuild web y deploy a gh-pages)
+- [x] 3.3 Commit + push (+ rebuild web y deploy a gh-pages)
