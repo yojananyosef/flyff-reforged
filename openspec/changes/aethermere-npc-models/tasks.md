@@ -14,4 +14,4 @@
 - [x] 3.1 Captura en navegador (ambos NPC de frente, con ropa) +
   SIM-QUEST PASS (modelos montados, idle activo)
 - [x] 3.2 `openspec validate aethermere-npc-models --strict` OK
-- [ ] 3.3 Commit + push (+ rebuild web y deploy a gh-pages)
+- [x] 3.3 Commit + push (+ rebuild web y deploy a gh-pages)
