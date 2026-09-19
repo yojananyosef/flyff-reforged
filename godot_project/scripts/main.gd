@@ -66,10 +66,60 @@ func _unhandled_input(event: InputEvent) -> void:
 func npc_setup() -> void:
 	$NPC.set_meta("npc_id", "npc_001")
 	$NPC2.set_meta("npc_id", "npc_002")
+	var game_data := get_node_or_null("/root/GameData")
 	for npc in [$NPC, $NPC2]:
 		var gy = ground_height(npc.position.x, npc.position.z)
 		if gy != null:
 			npc.position.y = gy
+		var def: Dictionary = {}
+		if game_data != null:
+			def = game_data.npcs.get(str(npc.get_meta("npc_id")), {})
+		_mount_npc(npc, def)
+
+
+func _mount_npc(npc: Node3D, def: Dictionary) -> void:
+	## Cuerpo FlyFF si existe el .glb (repliegue: cápsula de la escena).
+	## La colisión y el NameLabel quedan intactos.
+	var model := str(def.get("model", ""))
+	if model == "":
+		return
+	var path := "res://models/" + model + ".glb"
+	if not ResourceLoader.exists(path):
+		return
+	var packed = load(path)
+	if not (packed is PackedScene):
+		return
+	var inst := (packed as PackedScene).instantiate() as Node3D
+	inst.name = "Model"
+	npc.add_child(inst)
+	var cap := npc.get_node_or_null("MeshInstance3D")
+	if cap != null:
+		cap.visible = false
+	# Encara al spawn (+PI: los .glb miran a -Z local, como el avatar).
+	var game_data := get_node_or_null("/root/GameData")
+	if game_data != null:
+		var to: Vector3 = game_data.get_zone_spawn() - npc.global_position
+		to.y = 0.0
+		if to.length() > 0.01:
+			npc.rotation.y = atan2(to.x, to.z) + PI
+	var anim := _find_npc_anim(npc)
+	if anim != null:
+		for clip in ["stand", "Stand", "idle1", "Idle1", "idle", "Default"]:
+			if anim.has_animation(clip):
+				var a := anim.get_animation(clip)
+				a.loop_mode = Animation.LOOP_LINEAR
+				anim.play(clip)
+				break
+
+
+func _find_npc_anim(n: Node) -> AnimationPlayer:
+	if n is AnimationPlayer:
+		return n
+	for c in n.get_children():
+		var r := _find_npc_anim(c)
+		if r != null:
+			return r
+	return null
 
 
 func _load_terrain() -> void:
@@ -793,6 +843,37 @@ func _run_sim() -> void:
 	_check(is_equal_approx(player.mp, 30.0), "tonico +20 MP (%.0f)" % player.mp)
 
 	# --- movimiento (regresion WASD) ---
+	# En el llano más cercano y hacia la dirección más plana: el
+	# relieve frena la marcha en cuesta y falseaba la distancia.
+	var flat_m := Vector3(0, 0.5, 0)
+	var best_m := 999.0
+	for gx in range(-30, 31, 5):
+		for gz in range(-30, 31, 5):
+			var h0 = ground_height(gx, gz)
+			var hx = ground_height(gx + 2, gz)
+			var hz = ground_height(gx, gz + 2)
+			if h0 == null or hx == null or hz == null:
+				continue
+			var sl = absf(hx - h0) / 2.0 + absf(hz - h0) / 2.0
+			if sl < best_m:
+				best_m = sl
+				flat_m = Vector3(gx, h0 + 0.5, gz)
+	player.global_position = flat_m
+	player.velocity = Vector3.ZERO
+	var cam := player.get_node("CamPivot") as Node3D
+	var best_yaw := 0.0
+	var best_dh := 999.0
+	for yaw in [0.0, PI / 2.0, PI, -PI / 2.0]:
+		var cmd: Vector3 = Basis(Vector3.UP, yaw) * Vector3(0.0, 0.0, -1.0)
+		var probe = ground_height(flat_m.x + cmd.x * 6.0, flat_m.z + cmd.z * 6.0)
+		if probe == null:
+			continue
+		var dh = absf(probe - (flat_m.y - 0.5))
+		if dh < best_dh:
+			best_dh = dh
+			best_yaw = yaw
+	cam.global_rotation.y = best_yaw
+	await get_tree().physics_frame
 	var m0: Vector3 = player.global_position
 	Input.action_press("move_forward")
 	for i in 30:
@@ -815,6 +896,9 @@ func _run_sim() -> void:
 		var want_march: float = atan2(cmd.x, cmd.z) + PI
 		_check(absf(wrapf(pmodel.rotation.y - want_march, -PI, PI)) < 0.5,
 			"avatar encara la marcha (sin moonwalk)")
+	# De vuelta al spawn: las secciones siguientes usan puntos absolutos.
+	player.global_position = Vector3(0, 0.5, 0)
+	player.velocity = Vector3.ZERO
 
 	# --- animaciones (aethermere-anim) ---
 	var modeled := 0
@@ -827,15 +911,19 @@ func _run_sim() -> void:
 			walked += 1
 	if walked != modeled:
 		# Un golpe a medio reproducir no es Marcha quieta: se deja
-		# terminar (~1.4 s) y se recuenta una vez antes de fallar.
-		for i in 120:
-			await get_tree().physics_frame
-		walked = 0
-		for m in get_tree().get_nodes_in_group("monsters"):
-			if str(m.get("model_name")) == "":
-				continue
-			if _is_locomotion(m):
-				walked += 1
+		# terminar y se recuenta hasta 3 veces antes de fallar (el
+		# enjambre ataca por turnos y siempre hay algún atk en curso).
+		for attempt in 3:
+			for i in 120:
+				await get_tree().physics_frame
+			walked = 0
+			for m in get_tree().get_nodes_in_group("monsters"):
+				if str(m.get("model_name")) == "":
+					continue
+				if _is_locomotion(m):
+					walked += 1
+			if walked == modeled:
+				break
 	_check(modeled >= 7, "monstruos con modelo en escena (%d)" % modeled)
 	_check(walked == modeled, "locomocion en marcha (%d/%d)" % [walked, modeled])
 
@@ -860,6 +948,26 @@ func _run_sim() -> void:
 		_check(pap != null and pap.is_playing(), "locomocion del avatar activa")
 	else:
 		_check(player.get_node_or_null("Model") == null, "repliegue a capsula sin modelo")
+
+	# --- npc con cuerpo (aethermere-npc-models) ---
+	var want_npc := 0
+	for nid in game_data.npcs:
+		if ResourceLoader.exists("res://models/"
+				+ str(game_data.npcs[nid].get("model", "")) + ".glb"):
+			want_npc += 1
+	var got_npc := 0
+	var idle_npc := 0
+	for npc in [$NPC, $NPC2]:
+		var mdl: Node = npc.get_node_or_null("Model")
+		if mdl == null:
+			continue
+		got_npc += 1
+		var nap := _find_npc_anim(npc)
+		if nap != null and nap.is_playing() and str(nap.current_animation) \
+				in ["stand", "Stand", "idle1", "Idle1", "idle", "Default"]:
+			idle_npc += 1
+	_check(got_npc == want_npc, "npc con cuerpo (%d)" % got_npc)
+	_check(idle_npc == want_npc, "npc en idle (%d)" % idle_npc)
 
 	# --- agro + target (aethermere-aggro-target) ---
 	var wisp: Node3D = null
