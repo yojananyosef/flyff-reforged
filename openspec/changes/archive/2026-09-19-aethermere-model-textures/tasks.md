@@ -20,4 +20,4 @@
 - [x] 3.1 Captura en navegador (avatar de frente + monstruo; sin
   espejo vertical) + SIM-QUEST PASS
 - [x] 3.2 `openspec validate aethermere-model-textures --strict` OK
-- [ ] 3.3 Commit + push (+ rebuild web y deploy a gh-pages)
+- [x] 3.3 Commit + push (+ rebuild web y deploy a gh-pages)
