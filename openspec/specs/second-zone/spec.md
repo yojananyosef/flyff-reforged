@@ -7,8 +7,9 @@ Fenmarch es una segunda zona jugable con progresión desde Ironhold mediante por
 ### Requirement: Zona Fenmarch jugable
 
 El juego SHALL cargar el terreno real de los tiles 16–17/05–06 con
-spawn apoyado, vegetación del atlas, props y 4 monstruos propios
-cuando la zona actual es `fenmarch`; el HUD SHALL mostrar su nombre.
+spawn apoyado, vegetación del atlas, props y monstruos propios
+de niveles 4–8 con boss cuando la zona actual es `fenmarch`; el HUD
+SHALL mostrar su nombre.
 
 #### Scenario: Llegada a Fenmarch
 
@@ -20,6 +21,11 @@ cuando la zona actual es `fenmarch`; el HUD SHALL mostrar su nombre.
 
 - **WHEN** se completa la 110 y se habla con el warden de Fenmarch
 - **THEN** la 201 está disponible y la cadena avanza hasta la 205
+
+#### Scenario: Cadena extendida a 206
+
+- **WHEN** se completa la 205 y se habla con el warden de Fenmarch
+- **THEN** la 206 está disponible y la cadena avanza hasta el boss final
 
 ### Requirement: Viaje bidireccional
 
