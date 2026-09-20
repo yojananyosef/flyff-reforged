@@ -273,23 +273,43 @@
   "unlocks": "quest_205",
   "description": "Cliff crows steal the beacon cords. Bring down six."
  },
- {
-  "id": "quest_205",
-  "title": "The Fenmarch Alpha",
-  "giver": "npc_003",
-  "requires": "quest_204",
-  "target": {
-   "type": "kill",
-   "monster_id": "mon_006",
-   "count": 1
+  {
+   "id": "quest_205",
+   "title": "The Fenmarch Alpha",
+   "giver": "npc_003",
+   "requires": "quest_204",
+   "target": {
+    "type": "kill",
+    "monster_id": "mon_006",
+    "count": 1
+   },
+   "rewards": {
+    "exp": 520,
+    "items": [
+     "item_003"
+    ]
+   },
+   "unlocks": "quest_206",
+   "description": "The alpha hound dens above the camp. End it, and Sella will name the true prime that leads the ridge."
   },
-  "rewards": {
-   "exp": 520,
-   "items": [
-    "item_003"
-   ]
-  },
-  "unlocks": null,
-  "description": "The alpha hound dens above the camp. End it, and Fenmarch breathes easy."
- }
+  {
+   "id": "quest_206",
+   "title": "The Alpha Prime",
+   "giver": "npc_003",
+   "requires": "quest_205",
+   "target": {
+    "type": "kill",
+    "monster_id": "mon_012",
+    "count": 1
+   },
+   "rewards": {
+    "exp": 650,
+    "items": [
+     "item_009",
+     "item_009"
+    ]
+   },
+   "unlocks": null,
+   "description": "The Fenmarch Alpha Prime dens beyond the scars, scarred and huge. End it and the ridge breathes easy — the wardens will remember this."
+  }
 ]

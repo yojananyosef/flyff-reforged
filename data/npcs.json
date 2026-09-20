@@ -30,6 +30,6 @@
     "model": "Mvr_NpcRaundas",
     "x": -3.0,
     "z": 4.0,
-    "quests_available": ["quest_201", "quest_202", "quest_203", "quest_204", "quest_205"]
+    "quests_available": ["quest_201", "quest_202", "quest_203", "quest_204", "quest_205", "quest_206"]
   }
 ]

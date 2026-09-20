@@ -1300,7 +1300,7 @@ func _run_sim() -> void:
 	var gyf = ground_height(player.global_position.x, player.global_position.z)
 	_check(gyf != null and absf(player.global_position.y - (gyf + 0.5)) < 1.0,
 		"spawn de fenmarch apoyado (y %.1f)" % player.global_position.y)
-	var fset := ["mon_006", "mon_007", "mon_008", "mon_009"]
+	var fset := ["mon_006", "mon_007", "mon_008", "mon_009", "mon_010", "mon_011", "mon_012"]
 	var fcount := 0
 	var ocount := 0
 	for m in get_tree().get_nodes_in_group("monsters"):
@@ -1308,7 +1308,7 @@ func _run_sim() -> void:
 			fcount += 1
 		else:
 			ocount += 1
-	_check(fcount == 4, "monstruos de fenmarch = 4 (%d)" % fcount)
+	_check(fcount == 7, "monstruos de fenmarch = 7 (%d)" % fcount)
 	_check(ocount == 0, "sin monstruos de ironhold")
 	var sella = null
 	for n in get_tree().get_nodes_in_group("npcs"):
@@ -1328,6 +1328,20 @@ func _run_sim() -> void:
 		quest_mgr.report_kill("mon_006")
 	_check("quest_201" in quest_mgr.done, "quest_201 completada")
 	_check("quest_202" in quest_mgr.available_quests(), "quest_202 desbloqueada")
+	var fchain := ["quest_202", "quest_203", "quest_204", "quest_205", "quest_206"]
+	for qid in fchain:
+		_check(qid in quest_mgr.available_quests(), qid + " disponible en cadena")
+		_check(quest_mgr.accept_quest(qid), "aceptada " + qid)
+		var fq: Dictionary = game_data.quests[qid]
+		var fneed := int(fq["target"]["count"])
+		for i in fneed:
+			quest_mgr.report_kill(str(fq["target"]["monster_id"]))
+		_check(qid in quest_mgr.done, qid + " completada")
+	_check(quest_mgr.done.size() == 16, "16/16 misiones completadas")
+	_check(quest_mgr.available_quests().is_empty(), "sin quests pendientes tras la 206")
+	var boss_def: Dictionary = game_data.monsters["mon_012"]
+	_check(int(boss_def.get("level", 0)) == 8, "boss nivel 8")
+	_check(float(boss_def.get("hp", 0.0)) >= 300.0, "boss con HP de boss")
 	player.global_position = Vector3(4.0, 0.5, -4.0)
 	_check(nearest_portal(), "portal de fenmarch a tiro")
 	travel_to("ironhold", false)

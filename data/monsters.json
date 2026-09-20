@@ -119,19 +119,64 @@
   "model": "Mvr_Dreamflame01",
   "aggro_range": 7
  },
- {
-  "id": "mon_009",
-  "name": "Cliff Crow",
-  "zone": "fenmarch",
-  "level": 4,
-  "hp": 70,
-  "attack": 12,
-  "defense": 1,
-  "exp": 26,
-  "drops": [
-   "item_005"
-  ],
-  "model": "Mvr_PetParrot",
-  "aggro_range": 0
- }
+  {
+   "id": "mon_009",
+   "name": "Cliff Crow",
+   "zone": "fenmarch",
+   "level": 4,
+   "hp": 70,
+   "attack": 12,
+   "defense": 1,
+   "exp": 26,
+   "drops": [
+    "item_005"
+   ],
+   "model": "Mvr_PetParrot",
+   "aggro_range": 0
+  },
+  {
+   "id": "mon_010",
+   "name": "Ridge Stalker",
+   "zone": "fenmarch",
+   "level": 7,
+   "hp": 150,
+   "attack": 19,
+   "defense": 6,
+   "exp": 58,
+   "drops": [
+    "item_006"
+   ],
+   "model": "Mvr_Buur",
+   "aggro_range": 7
+  },
+  {
+   "id": "mon_011",
+   "name": "Storm Crow",
+   "zone": "fenmarch",
+   "level": 7,
+   "hp": 110,
+   "attack": 18,
+   "defense": 4,
+   "exp": 54,
+   "drops": [
+    "item_008"
+   ],
+   "model": "Mvr_PetParrot",
+   "aggro_range": 6
+  },
+  {
+   "id": "mon_012",
+   "name": "Fenmarch Alpha Prime",
+   "zone": "fenmarch",
+   "level": 8,
+   "hp": 320,
+   "attack": 24,
+   "defense": 7,
+   "exp": 180,
+   "drops": [
+    "item_009"
+   ],
+   "model": "Mvr_PetDog1",
+   "aggro_range": 9
+  }
 ]
