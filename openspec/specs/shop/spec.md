@@ -8,8 +8,9 @@ venta, y equipo (arma/armadura) que modifica ataque y defensa.
 ### Requirement: Oro y comercio
 
 El jugador SHALL empezar con 30 de oro, ganar `nivel × 2` por muerte,
-comprar del stock (pan, tónico, espada, túnica) si le alcanza y vender
-objetos no-misión no-equipados a mitad de precio.
+comprar del stock (pan, tónico, espada, túnica y tier Fenmarch con
+requisito de nivel) si le alcanza y vender objetos no-misión
+no-equipados a mitad de precio.
 
 #### Scenario: Compra y venta
 
@@ -32,10 +33,11 @@ base + bonus de la armadura; desequipar SHALL devolver al inventario.
 
 Pell SHALL estar en escena; E SHALL abrir el diálogo del NPC más
 cercano; el diálogo SHALL mostrar Comerciar solo si es mercader; la
-tienda SHALL listar stock con precios, vender lo vendible y cerrar con
+tienda SHALL listar stock con precios (8 artículos con el tier
+Fenmarch), vender lo vendible y cerrar con
 E/ratón.
 
 #### Scenario: Comercio con Pell
 
 - **WHEN** E junto a Pell y clic en Comerciar
-- **THEN** se abre la tienda con 4 artículos y el oro visible
+- **THEN** se abre la tienda con 8 artículos y el oro visible

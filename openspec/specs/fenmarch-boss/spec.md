@@ -20,7 +20,7 @@ El juego SHALL generar en `fenmarch` un boss de nivel 8 con HP y ataque superior
 
 ### Requirement: Quest 206 de cierre
 
-La quest 206 SHALL requerir la 205, pedirla al warden de Fenmarch y contar la muerte del boss; al completarla SHALL otorgar la recompensa final y no desbloquear más quests de Fenmarch.
+La quest 206 SHALL requerir la 205, pedirla al warden de Fenmarch y contar la muerte del boss; al completarla SHALL otorgar la recompensa final (650 EXP + espada Alpha + colmillos) y no desbloquear más quests de Fenmarch.
 
 #### Scenario: Cierre 205 → 206
 
