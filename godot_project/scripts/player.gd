@@ -504,6 +504,8 @@ func buy(item_id: String) -> bool:
 	var def := item_def(item_id)
 	if def.is_empty():
 		return false
+	if int(def.get("level_required", 1)) > level:
+		return false
 	var price := int(def.get("price", 0))
 	if price <= 0 or gold < price:
 		return false
@@ -534,6 +536,8 @@ func sell(item_id: String) -> bool:
 
 func equip(item_id: String) -> bool:
 	var def := item_def(item_id)
+	if int(def.get("level_required", 1)) > level:
+		return false
 	var slot := ""
 	if str(def.get("type", "")) == "weapon":
 		slot = "weapon"

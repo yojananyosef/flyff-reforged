@@ -76,11 +76,47 @@
     "description": "Curved fang of a rustjaw wolf."
   },
   {
-    "id": "item_010",
-    "name": "Ironhold Charter",
-    "type": "quest",
-    "level_required": 1,
-    "price": 0,
-    "description": "Sealed letter proving service to the Ironhold council."
+   "id": "item_010",
+   "name": "Ironhold Charter",
+   "type": "quest",
+   "level_required": 1,
+   "price": 0,
+   "description": "Sealed letter proving service to the Ironhold council."
+  },
+  {
+   "id": "item_011",
+   "name": "Ridge Blade",
+   "type": "weapon",
+   "level_required": 4,
+   "price": 90,
+   "attack_bonus": 8,
+   "description": "Heavy ridge-forged blade issued to Fenmarch wardens."
+  },
+  {
+   "id": "item_012",
+   "name": "Alpha Fang Blade",
+   "type": "weapon",
+   "level_required": 7,
+   "price": 220,
+   "attack_bonus": 14,
+   "description": "Blade edged with alpha fangs. The ridge remembers its bite."
+  },
+  {
+   "id": "item_013",
+   "name": "Ridge Coat",
+   "type": "armor",
+   "level_required": 4,
+   "price": 80,
+   "defense_bonus": 6,
+   "description": "Wind-cured coat stitched at the Fenmarch camp."
+  },
+  {
+   "id": "item_014",
+   "name": "Stormplate",
+   "type": "armor",
+   "level_required": 7,
+   "price": 200,
+   "defense_bonus": 9,
+   "description": "Storm-dark plate that turns the alpha's claws."
   }
 ]

@@ -226,14 +226,15 @@
    "monster_id": "mon_007",
    "count": 3
   },
-  "rewards": {
-   "exp": 380,
-   "items": [
-    "item_004"
-   ]
-  },
-  "unlocks": "quest_203",
-  "description": "Crag boars root up the signal cairns. Scatter three of them."
+   "rewards": {
+    "exp": 380,
+    "items": [
+     "item_004",
+     "item_011"
+    ]
+   },
+   "unlocks": "quest_203",
+   "description": "Crag boars root up the signal cairns. Scatter three of them."
  },
  {
   "id": "quest_203",
@@ -264,14 +265,15 @@
    "monster_id": "mon_009",
    "count": 6
   },
-  "rewards": {
-   "exp": 400,
-   "items": [
-    "item_004"
-   ]
-  },
-  "unlocks": "quest_205",
-  "description": "Cliff crows steal the beacon cords. Bring down six."
+   "rewards": {
+    "exp": 400,
+    "items": [
+     "item_004",
+     "item_013"
+    ]
+   },
+   "unlocks": "quest_205",
+   "description": "Cliff crows steal the beacon cords. Bring down six."
  },
   {
    "id": "quest_205",
@@ -306,7 +308,8 @@
     "exp": 650,
     "items": [
      "item_009",
-     "item_009"
+     "item_009",
+     "item_012"
     ]
    },
    "unlocks": null,

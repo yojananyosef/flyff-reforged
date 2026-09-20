@@ -14,7 +14,7 @@ var _target_label: Label
 var _protect_label: Label
 var _build_label: Label
 
-const SHOP_STOCK := ["item_003", "item_004", "item_001", "item_002"]
+const SHOP_STOCK := ["item_003", "item_004", "item_001", "item_002", "item_011", "item_013", "item_012", "item_014"]
 var shop_open := false
 var _inv_ids: Array = []
 var _sell_ids: Array = []
