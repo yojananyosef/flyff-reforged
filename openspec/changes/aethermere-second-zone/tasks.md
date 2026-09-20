@@ -20,4 +20,4 @@
   201 aceptable y contable) + captura en navegador de Fenmarch
   (+ fix: el save manda la zona al arrancar; pista HUD por zona)
 - [x] 3.2 `openspec validate aethermere-second-zone --strict` OK
-- [ ] 3.3 Commit + push (+ rebuild web y deploy a gh-pages)
+- [x] 3.3 Commit + push (+ rebuild web y deploy a gh-pages)
