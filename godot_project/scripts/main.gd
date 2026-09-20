@@ -8,6 +8,7 @@ const MonsterScript := preload("res://scripts/monster.gd")
 
 var _failures: Array[String] = []
 var _terrain = null  # {n, step, ox, oz, hs} o null (repliegue al plano)
+var _zone_atlas := ""  # atlas de la zona actual (repliegue del _build_terrain_mesh)
 
 @onready var player = $Player
 @onready var dialogue = $DialogueLayer
@@ -19,27 +20,57 @@ func _ready() -> void:
 	if game_data == null:
 		push_error("[Main] autoload GameData no encontrado")
 		return
+	var save_mgr = get_node_or_null("/root/SaveManager")
+	var sim_mode := "--sim-quest" in OS.get_cmdline_user_args()
+	# El save manda la zona: se carga ANTES de construir (si el save
+	# es de otra zona, el mundo se levanta ya en la correcta).
+	if save_mgr != null and not sim_mode and save_mgr.has_save():
+		save_mgr.load_game()
+	if not game_data.zones.has(game_data.current_zone_id):
+		push_warning("[Main] zona desconocida: " + str(game_data.current_zone_id))
+		game_data.current_zone_id = str(game_data.zones.keys()[0])
 	print("[Main] arranque OK. Zona: %s (%s)" % [game_data.current_zone_id, game_data.get_zone_display_name()])
-	if game_data.current_zone_id != "ironhold":
-		push_warning("[Main] zona actual no es 'ironhold': " + str(game_data.current_zone_id))
-	_load_terrain()
-	var psy = ground_height(player.position.x, player.position.z)
-	if psy != null:
-		player.position.y = psy + 0.5
-	npc_setup()
-	_spawn_monsters(game_data)
-	_load_props()
+	_build_zone()
 	var audio = get_node_or_null("/root/AudioManager")
 	if audio != null:
 		audio.play_zone_music()
-	var save_mgr = get_node_or_null("/root/SaveManager")
-	var sim_mode := "--sim-quest" in OS.get_cmdline_user_args()
-	if save_mgr != null and not sim_mode and save_mgr.has_save():
-		save_mgr.load_game()
 	if sim_mode:
 		_run_sim.call_deferred()
 	if "--shot" in OS.get_cmdline_user_args():
 		_take_shot.call_deferred()
+
+
+func _build_zone() -> void:
+	## (Re)construye la zona actual: terreno, apoyo del jugador, NPC,
+	## monstruos, props y portales. Limpia restos de la zona anterior
+	## (el viaje sin recarga del sim; en juego se recarga la escena).
+	for n in ["TerrainMesh", "TerrainBody", "Water", "Grass", "TreeTrunks",
+			"TreeCanopies", "Monsters", "Props", "Portals"]:
+		_discard(n)
+	# Repliegues antes de intentar lo generado.
+	$Ground.visible = true
+	$Ground.get_node("CollisionShape3D").set_deferred("disabled", false)
+	var game_data := get_node_or_null("/root/GameData")
+	_load_terrain()
+	_snap_player()
+	npc_setup()
+	if game_data != null:
+		_spawn_monsters(game_data)
+	_load_props()
+	_load_portals()
+
+
+func _discard(node_name: String) -> void:
+	var old := get_node_or_null(node_name)
+	if old != null and old.get_parent() != null:
+		old.get_parent().remove_child(old)
+		old.queue_free()
+
+
+func _snap_player() -> void:
+	var psy = ground_height(player.position.x, player.position.z)
+	if psy != null:
+		player.position.y = psy + 0.5
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -50,9 +81,19 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif hud.is_shop_open():
 				hud.close_shop()
 			else:
-				var npc = nearest_npc()
-				if npc != null:
-					dialogue.open(str(npc.get_meta("npc_id")))
+				var game_data_p := get_node_or_null("/root/GameData")
+				var t: Dictionary = game_data_p.zones.get(
+					game_data_p.current_zone_id, {}).get("travel", {})
+				# Sobre el anillo el portal manda; si no, habla con el
+				# NPC cercano; en el borde del anillo vale el portal.
+				if nearest_portal(1.5):
+					travel_to(str(t.get("to", "")))
+				else:
+					var npc = nearest_npc()
+					if npc != null:
+						dialogue.open(str(npc.get_meta("npc_id")))
+					elif nearest_portal():
+						travel_to(str(t.get("to", "")))
 		elif event.physical_keycode == KEY_F5:
 			var save_mgr = get_node_or_null("/root/SaveManager")
 			if save_mgr != null:
@@ -64,17 +105,44 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func npc_setup() -> void:
-	$NPC.set_meta("npc_id", "npc_001")
-	$NPC2.set_meta("npc_id", "npc_002")
+	## Slotes $NPC/$NPC2 posicionados desde datos (máx. 2 por zona; el
+	## resto se avisa y se omite). Ironhold conserva sus puestos.
 	var game_data := get_node_or_null("/root/GameData")
-	for npc in [$NPC, $NPC2]:
-		var gy = ground_height(npc.position.x, npc.position.z)
+	var zone_npcs: Array = []
+	if game_data != null:
+		for nid in game_data.npcs:
+			var nd: Dictionary = game_data.npcs[nid]
+			if str(nd.get("zone", "")) == game_data.current_zone_id:
+				zone_npcs.append(nd)
+	zone_npcs.sort_custom(func(a, b): return str(a.get("id")) < str(b.get("id")))
+	var slots := [$NPC, $NPC2]
+	for i in slots.size():
+		var slot: Node3D = slots[i]
+		# Limpia el montaje anterior (viaje sin recarga del sim).
+		var old_model := slot.get_node_or_null("Model")
+		if old_model != null:
+			slot.remove_child(old_model)
+			old_model.queue_free()
+		if i >= zone_npcs.size():
+			slot.visible = false
+			slot.get_node("CollisionShape3D").set_deferred("disabled", true)
+			continue
+		var def: Dictionary = zone_npcs[i]
+		slot.visible = true
+		slot.get_node("CollisionShape3D").set_deferred("disabled", false)
+		slot.set_meta("npc_id", str(def.get("id", "")))
+		slot.position = Vector3(float(def.get("x", slot.position.x)),
+			slot.position.y, float(def.get("z", slot.position.z)))
+		var gy = ground_height(slot.position.x, slot.position.z)
 		if gy != null:
-			npc.position.y = gy
-		var def: Dictionary = {}
-		if game_data != null:
-			def = game_data.npcs.get(str(npc.get_meta("npc_id")), {})
-		_mount_npc(npc, def)
+			slot.position.y = gy
+		var cap := slot.get_node_or_null("MeshInstance3D")
+		if cap != null:
+			cap.visible = true
+		var label := slot.get_node_or_null("NameLabel") as Label3D
+		if label != null:
+			label.text = str(def.get("name", ""))
+		_mount_npc(slot, def)
 
 
 func _mount_npc(npc: Node3D, def: Dictionary) -> void:
@@ -124,9 +192,12 @@ func _find_npc_anim(n: Node) -> AnimationPlayer:
 
 func _load_terrain() -> void:
 	## Suelo real (visual .glb + HeightMap) si setup_terrain.py generó los
-	## archivos; si no, se conserva el plano de la escena (repliegue).
-	var jpath := "res://models/terrain_ironhold.json"
-	var gpath := "res://models/terrain_ironhold.glb"
+	## archivos de la zona; si no, se conserva el plano de la escena.
+	var game_data := get_node_or_null("/root/GameData")
+	var zid := str(game_data.current_zone_id) if game_data != null else "ironhold"
+	_zone_atlas = "res://models/terrain_" + zid + "_atlas.png"
+	var jpath := "res://models/terrain_" + zid + ".json"
+	var gpath := "res://models/terrain_" + zid + ".glb"
 	if not FileAccess.file_exists(jpath):
 		print("[Terreno] sin rejilla generada: plano de repliegue")
 		return
@@ -352,8 +423,8 @@ func _build_terrain_mesh(n: int, step: float, ox: float, oz: float,
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
 	var mat := StandardMaterial3D.new()
 	mat.roughness = 1.0
-	if ResourceLoader.exists("res://models/terrain_ironhold_atlas.png"):
-		mat.albedo_texture = load("res://models/terrain_ironhold_atlas.png")
+	if _zone_atlas != "" and ResourceLoader.exists(_zone_atlas):
+		mat.albedo_texture = load(_zone_atlas)
 		mat.albedo_color = Color(0.82, 0.82, 0.82)
 	else:
 		mat.albedo_color = Color(0.32, 0.38, 0.3)
@@ -387,11 +458,82 @@ func nearest_npc():
 	var best = null
 	var best_d := 3.5
 	for n in get_tree().get_nodes_in_group("npcs"):
+		if not (n as Node3D).visible:
+			continue
 		var d: float = player.global_position.distance_to(n.global_position)
 		if d < best_d:
 			best_d = d
 			best = n
 	return best
+
+
+func _load_portals() -> void:
+	## Anillo dorado en el punto `travel` de la zona (repliegue: nada).
+	var game_data := get_node_or_null("/root/GameData")
+	if game_data == null:
+		return
+	var t: Dictionary = game_data.zones.get(
+		game_data.current_zone_id, {}).get("travel", {})
+	if t.is_empty():
+		return
+	var container := Node3D.new()
+	container.name = "Portals"
+	add_child(container)
+	var ring := MeshInstance3D.new()
+	ring.name = "Gate"
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.7
+	torus.outer_radius = 1.1
+	var mmat := StandardMaterial3D.new()
+	mmat.albedo_color = Color(1.0, 0.75, 0.25)
+	mmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	torus.material = mmat
+	ring.mesh = torus
+	var px := float(t.get("x", 0.0))
+	var pz := float(t.get("z", 0.0))
+	var gy = ground_height(px, pz)
+	ring.position = Vector3(px, (gy if gy != null else 0.5) + 1.2, pz)
+	container.add_child(ring)
+	var dest: Dictionary = game_data.zones.get(str(t.get("to", "")), {})
+	var label := Label3D.new()
+	label.text = "→ " + str(dest.get("display_name", t.get("to", "")))
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.font_size = 48
+	label.position = ring.position + Vector3(0, 1.6, 0)
+	container.add_child(label)
+
+
+func nearest_portal(max_d := 3.0) -> bool:
+	## True si el jugador pisa el anillo de viaje de la zona.
+	var gates := get_node_or_null("Portals")
+	if gates == null:
+		return false
+	var gate := gates.get_node_or_null("Gate") as Node3D
+	if gate == null:
+		return false
+	var d: Vector3 = player.global_position - gate.global_position
+	d.y = 0.0
+	return d.length() < max_d
+
+
+func travel_to(zone_id: String, do_reload := true) -> void:
+	## Viaja: fija zona, deja al jugador en el spawn destino, guarda y
+	## recarga (en el sim se pasa do_reload=false y se reconstruye a mano).
+	var game_data := get_node_or_null("/root/GameData")
+	var save_mgr := get_node_or_null("/root/SaveManager")
+	if game_data == null or not game_data.zones.has(zone_id):
+		return
+	game_data.current_zone_id = zone_id
+	var sp: Vector3 = game_data.get_zone_spawn()
+	player.global_position = sp
+	player.velocity = Vector3.ZERO
+	player.target = null
+	player.auto_attack = false
+	player.has_dest = false
+	if save_mgr != null:
+		save_mgr.save_game()
+	if do_reload:
+		get_tree().reload_current_scene()
 
 
 func _spawn_monsters(game_data: Node) -> void:
@@ -807,7 +949,8 @@ func _run_sim() -> void:
 			quest_mgr.report_kill(str(q["target"]["monster_id"]))
 		_check(qid in quest_mgr.done, qid + " completada")
 	_check(quest_mgr.done.size() == 10, "10/10 misiones completadas")
-	_check(quest_mgr.available_quests().is_empty(), "sin misiones pendientes")
+	_check(quest_mgr.available_quests() == ["quest_201"],
+		"solo la 201 pendiente tras la 110")
 	_check(player.level >= 5, "nivel >= 5 al cierre (es %d)" % player.level)
 
 	# --- guardado ---
@@ -952,8 +1095,11 @@ func _run_sim() -> void:
 	# --- npc con cuerpo (aethermere-npc-models) ---
 	var want_npc := 0
 	for nid in game_data.npcs:
+		var nd: Dictionary = game_data.npcs[nid]
+		if str(nd.get("zone", "")) != game_data.current_zone_id:
+			continue
 		if ResourceLoader.exists("res://models/"
-				+ str(game_data.npcs[nid].get("model", "")) + ".glb"):
+				+ str(nd.get("model", "")) + ".glb"):
 			want_npc += 1
 	var got_npc := 0
 	var idle_npc := 0
@@ -1138,6 +1284,72 @@ func _run_sim() -> void:
 				"avatar encara al golpear")
 	else:
 		_check(false, "lobo vivo para auto-ataque")
+
+	# --- segunda zona (aethermere-second-zone) ---
+	player.hp = player.max_hp
+	player.global_position = Vector3(8.0, 0.5, -5.0)
+	_check(nearest_portal(), "portal de ironhold a tiro")
+	travel_to("fenmarch", false)
+	_check(game_data.current_zone_id == "fenmarch", "zona actual es fenmarch")
+	var sfile = FileAccess.open("user://aethermere_save.json", FileAccess.READ)
+	_check(sfile != null and '"zone": "fenmarch"' in sfile.get_as_text(),
+		"save guarda fenmarch")
+	_build_zone()
+	for i in 5:
+		await get_tree().physics_frame
+	var gyf = ground_height(player.global_position.x, player.global_position.z)
+	_check(gyf != null and absf(player.global_position.y - (gyf + 0.5)) < 1.0,
+		"spawn de fenmarch apoyado (y %.1f)" % player.global_position.y)
+	var fset := ["mon_006", "mon_007", "mon_008", "mon_009"]
+	var fcount := 0
+	var ocount := 0
+	for m in get_tree().get_nodes_in_group("monsters"):
+		if str(m.get("monster_id")) in fset:
+			fcount += 1
+		else:
+			ocount += 1
+	_check(fcount == 4, "monstruos de fenmarch = 4 (%d)" % fcount)
+	_check(ocount == 0, "sin monstruos de ironhold")
+	var sella = null
+	for n in get_tree().get_nodes_in_group("npcs"):
+		if n.visible and str(n.get_meta("npc_id")) == "npc_003":
+			sella = n
+	_check(sella != null, "Sella visible en fenmarch")
+	if sella != null:
+		_check((sella as Node3D).get_node_or_null("Model") != null,
+			"Sella con cuerpo")
+		player.global_position = (sella as Node3D).global_position + Vector3(1.0, 0.0, 0.0)
+		_check(nearest_npc() == sella, "E junto a Sella la elige")
+		dialogue.open("npc_003")
+		_check(dialogue.is_open(), "dialogo de Sella se abre")
+		dialogue.close()
+	_check(quest_mgr.accept_quest("quest_201"), "aceptar quest_201")
+	for i in 4:
+		quest_mgr.report_kill("mon_006")
+	_check("quest_201" in quest_mgr.done, "quest_201 completada")
+	_check("quest_202" in quest_mgr.available_quests(), "quest_202 desbloqueada")
+	player.global_position = Vector3(4.0, 0.5, -4.0)
+	_check(nearest_portal(), "portal de fenmarch a tiro")
+	travel_to("ironhold", false)
+	_build_zone()
+	for i in 5:
+		await get_tree().physics_frame
+	_check(game_data.current_zone_id == "ironhold", "de vuelta en ironhold")
+	var back_props := get_node_or_null("Props")
+	_check(back_props != null and back_props.get_child_count() == 5,
+		"ironhold restaurado (5 props)")
+	# --- el save manda la zona al arrancar (mundo de la zona guardada) ---
+	game_data.current_zone_id = "fenmarch"
+	save_mgr.save_game()
+	game_data.current_zone_id = "ironhold"
+	save_mgr.load_game()
+	_build_zone()
+	_check(game_data.current_zone_id == "fenmarch", "load restaura fenmarch")
+	_check(int((_terrain as Dictionary).get("tiles", [[0]])[0][0]) == 16,
+		"mundo reconstruido en fenmarch")
+	travel_to("ironhold", false)
+	_build_zone()
+	_check(game_data.current_zone_id == "ironhold", "cierre en ironhold")
 
 	if _failures.is_empty():
 		print("SIM-QUEST PASS")

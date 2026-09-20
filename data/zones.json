@@ -14,6 +14,24 @@
       {"model": "Obj_BeheBasicwall01", "x": -4.0, "z": -6.0, "yaw": 0.0},
       {"model": "Obj_BeheBasicwall01", "x": 0.0, "z": -7.0, "yaw": 0.3},
       {"model": "Obj_BeheBasicwall01", "x": 4.0, "z": -6.0, "yaw": -0.2}
-    ]
+    ],
+    "travel": {"to": "fenmarch", "x": 8.0, "z": -5.0}
+  },
+  {
+    "id": "fenmarch",
+    "display_name": "Fenmarch",
+    "original_asset_dir": "WdMadrigal",
+    "description": "Wind-scoured highland basin past the dunes, second watch of the Aethermere wardens.",
+    "level_range": [4, 8],
+    "npcs": ["npc_003"],
+    "monsters": ["mon_006", "mon_007", "mon_008", "mon_009"],
+    "spawn_point": [0, 1, 0],
+    "props": [
+      {"model": "Obj_EliunTent01", "x": -7.0, "z": 6.0, "yaw": 0.4},
+      {"model": "Obj_EliunTent02", "x": 7.0, "z": 5.0, "yaw": -0.5},
+      {"model": "Obj_BeheBasicwall01", "x": -3.0, "z": -7.0, "yaw": 0.1},
+      {"model": "Obj_BeheBasicwall01", "x": 3.0, "z": -7.0, "yaw": -0.1}
+    ],
+    "travel": {"to": "ironhold", "x": 4.0, "z": -4.0}
   }
 ]

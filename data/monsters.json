@@ -1,77 +1,137 @@
 [
-  {
-    "id": "mon_001",
-    "name": "Cinder Hare",
-    "zone": "ironhold",
-    "level": 1,
-    "hp": 30,
-    "attack": 4,
-    "defense": 0,
-    "exp": 8,
-    "drops": [
-      "item_005"
-    ],
-    "model": "Mvr_PetCat1",
-    "aggro_range": 0
-  },
-  {
-    "id": "mon_002",
-    "name": "Mossback Boar",
-    "zone": "ironhold",
-    "level": 2,
-    "hp": 55,
-    "attack": 7,
-    "defense": 2,
-    "exp": 14,
-    "drops": [
-      "item_006"
-    ],
-    "model": "Mvr_Buur",
-    "aggro_range": 5
-  },
-  {
-    "id": "mon_003",
-    "name": "Fen Wisp",
-    "zone": "ironhold",
-    "level": 2,
-    "hp": 40,
-    "attack": 8,
-    "defense": 0,
-    "exp": 16,
-    "drops": [
-      "item_007"
-    ],
-    "model": "Mvr_Dreamflame01",
-    "aggro_range": 6
-  },
-  {
-    "id": "mon_004",
-    "name": "Hollow Crow",
-    "zone": "ironhold",
-    "level": 1,
-    "hp": 25,
-    "attack": 5,
-    "defense": 0,
-    "exp": 7,
-    "drops": [
-      "item_008"
-    ],
-    "model": "Mvr_PetParrot",
-    "aggro_range": 0
-  },
-  {
-    "id": "mon_005",
-    "name": "Rustjaw Wolf",
-    "zone": "ironhold",
-    "level": 3,
-    "hp": 80,
-    "attack": 11,
-    "defense": 3,
-    "exp": 24,
-    "drops": [
-      "item_009"
-    ],
-    "model": "Mvr_PetDog1",
-    "aggro_range": 8
-  }
+ {
+  "id": "mon_001",
+  "name": "Cinder Hare",
+  "zone": "ironhold",
+  "level": 1,
+  "hp": 30,
+  "attack": 4,
+  "defense": 0,
+  "exp": 8,
+  "drops": [
+   "item_005"
+  ],
+  "model": "Mvr_PetCat1",
+  "aggro_range": 0
+ },
+ {
+  "id": "mon_002",
+  "name": "Mossback Boar",
+  "zone": "ironhold",
+  "level": 2,
+  "hp": 55,
+  "attack": 7,
+  "defense": 2,
+  "exp": 14,
+  "drops": [
+   "item_006"
+  ],
+  "model": "Mvr_Buur",
+  "aggro_range": 5
+ },
+ {
+  "id": "mon_003",
+  "name": "Fen Wisp",
+  "zone": "ironhold",
+  "level": 2,
+  "hp": 40,
+  "attack": 8,
+  "defense": 0,
+  "exp": 16,
+  "drops": [
+   "item_007"
+  ],
+  "model": "Mvr_Dreamflame01",
+  "aggro_range": 6
+ },
+ {
+  "id": "mon_004",
+  "name": "Hollow Crow",
+  "zone": "ironhold",
+  "level": 1,
+  "hp": 25,
+  "attack": 5,
+  "defense": 0,
+  "exp": 7,
+  "drops": [
+   "item_008"
+  ],
+  "model": "Mvr_PetParrot",
+  "aggro_range": 0
+ },
+ {
+  "id": "mon_005",
+  "name": "Rustjaw Wolf",
+  "zone": "ironhold",
+  "level": 3,
+  "hp": 80,
+  "attack": 11,
+  "defense": 3,
+  "exp": 24,
+  "drops": [
+   "item_009"
+  ],
+  "model": "Mvr_PetDog1",
+  "aggro_range": 8
+ },
+ {
+  "id": "mon_006",
+  "name": "Fen Hound",
+  "zone": "fenmarch",
+  "level": 4,
+  "hp": 95,
+  "attack": 13,
+  "defense": 3,
+  "exp": 30,
+  "drops": [
+   "item_003"
+  ],
+  "model": "Mvr_PetDog1",
+  "aggro_range": 7
+ },
+ {
+  "id": "mon_007",
+  "name": "Crag Boar",
+  "zone": "fenmarch",
+  "level": 5,
+  "hp": 120,
+  "attack": 15,
+  "defense": 5,
+  "exp": 38,
+  "drops": [
+   "item_006"
+  ],
+  "model": "Mvr_Buur",
+  "aggro_range": 6
+ },
+ {
+  "id": "mon_008",
+  "name": "Ember Wisp",
+  "zone": "fenmarch",
+  "level": 6,
+  "hp": 100,
+  "attack": 17,
+  "defense": 3,
+  "exp": 46,
+  "drops": [
+   "item_007"
+  ],
+  "model": "Mvr_Dreamflame01",
+  "aggro_range": 7
+ },
+ {
+  "id": "mon_009",
+  "name": "Cliff Crow",
+  "zone": "fenmarch",
+  "level": 4,
+  "hp": 70,
+  "attack": 12,
+  "defense": 1,
+  "exp": 26,
+  "drops": [
+   "item_005"
+  ],
+  "model": "Mvr_PetParrot",
+  "aggro_range": 0
+ }
 ]

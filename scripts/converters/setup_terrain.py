@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
-"""Prepara el terreno de Ironhold desde el cliente FlyFF.
+"""Prepara el terreno de una zona desde el cliente FlyFF.
 
-Lee tiles .lnd, cose un bloque (defecto 2x2: x10-11/y16-17, costa suave),
-aplana el vacio a nivel del mar, rebasa (mar -> y=0) y centra el tile
-(10,17) en el origen del juego. Genera:
-  - terrain_ironhold.glb  (visual con textura del atlas, via lnd_to_glb.py)
-  - terrain_ironhold.json (rejilla para colision HeightMap + snap en Godot,
-    mas puestos de hierba/arboles)
-  - terrain_ironhold_atlas.png (2x2 texturas .dds del cliente via .res)
+Lee tiles .lnd, cose un bloque (defecto 2x2 Ironhold x10-11/y16-17,
+costa suave), aplana el vacio a nivel del mar, rebasa y centra un tile
+en el origen del juego. Genera `terrain_<name>.{glb,json,_atlas.png}`.
 
 Como audio/texturas/modelos, no se versiona (ver .gitignore).
 Requiere pillow para el atlas (sin el: verde plano + sin hierba).
 
 Uso:
     python3 setup_terrain.py --client /ruta/a/app --out ../../godot_project/models
+    python3 setup_terrain.py --client ... --out ... --name fenmarch \
+        --tiles 15-05,16-05,15-06,16-06 --center 15-06 --sea 0 --water -30
 """
 
 from __future__ import annotations
@@ -36,6 +34,9 @@ CENTER_TILE = (10, 17)  # su centro queda en el origen del juego
 TILE_SIZE = 128.0
 SEA_H = 100.0
 VOID_OVER = 2000.0
+# El cliente rellena áreas sin diseñar con 1000.0 exactos (mesa fantasma:
+# p. ej. 97 % del tile 15-06); se trata como vacío y se difunde.
+VOID_EXACT = frozenset({1000.0})
 TILE_PX = 256  # las .dds del cliente son 256x256
 # Lamina de agua: la cubeta queda bajo la cota del oceano oeste (el
 # spawn pisa -12.5); -14 deja el campamento seco y encharca las hoyas.
@@ -178,10 +179,24 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", required=True, help="Destino (godot_project/models)")
     ap.add_argument("--tile-size", type=float, default=TILE_SIZE)
     ap.add_argument("--sea", type=float, default=SEA_H)
+    ap.add_argument("--water", type=float, default=WATER_Y)
+    ap.add_argument("--tiles", default=",".join(f"{tx}-{ty}" for tx, ty in TILES),
+                    help="Bloque 'tx-ty,tx-ty...' (defecto: Ironhold)")
+    ap.add_argument("--center", default=f"{CENTER_TILE[0]}-{CENTER_TILE[1]}",
+                    help="Tile centrado en el origen (defecto: 10-17)")
+    ap.add_argument("--name", default="ironhold",
+                    help="Nombre de zona para terrain_<name>.*")
     args = ap.parse_args(argv)
 
+    tiles = [tuple(int(v) for v in t.split("-")) for t in args.tiles.split(",")]
+    cx, cy = (int(v) for v in args.center.split("-"))
+    center = (cx, cy)
+    if center not in tiles:
+        print(f"centro {args.center} fuera del bloque", file=sys.stderr)
+        return 1
+
     grids = {}
-    for tx, ty in TILES:
+    for tx, ty in tiles:
         p = os.path.join(args.client, "World", "WdMadrigal",
                          f"WdMadrigal{tx:02d}-{ty:02d}.lnd")
         if not os.path.isfile(p):
@@ -191,8 +206,8 @@ def main(argv: list[str] | None = None) -> int:
         grids[(tx, ty)] = list(r["heights"])
         print(f"OK tile {tx}-{ty} (vacio {r['stats']['void_frac']:.3f})")
 
-    xs = sorted({t[0] for t in TILES})
-    ys = sorted({t[1] for t in TILES})
+    xs = sorted({t[0] for t in tiles})
+    ys = sorted({t[1] for t in tiles})
     nx, ny = len(xs), len(ys)
     n = nx * (GRID - 1) + 1
     assert n == ny * (GRID - 1) + 1
@@ -206,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
                     v = g[lz * GRID + lx]
                     k = (j * (GRID - 1) + lz) * n + i * (GRID - 1) + lx
                     raw[k] = v
-                    mask[k] = v > VOID_OVER
+                    mask[k] = v > VOID_OVER or v in VOID_EXACT
     # Difusion desde vecinos conocidos: sin muros de 100 m, relieve continuo.
     filled = list(raw)
     frontier = [k for k in range(n * n) if mask[k]]
@@ -234,17 +249,17 @@ def main(argv: list[str] | None = None) -> int:
     stitched = [v - args.sea for v in filled]
     # Origen: centro de CENTER_TILE en (0, 0) del juego.
     step = args.tile_size / (GRID - 1)
-    ci = xs.index(CENTER_TILE[0])
-    cj = ys.index(CENTER_TILE[1])
+    ci = xs.index(center[0])
+    cj = ys.index(center[1])
     ox = -(ci * (GRID - 1) + (GRID - 1) / 2) * step
     oz = -(cj * (GRID - 1) + (GRID - 1) / 2) * step
     spec = {
         "n": n,
         "tile_size": args.tile_size,
         "origin": [ox, oz],
-        "tiles": [list(t) for t in TILES],
+        "tiles": [list(t) for t in tiles],
         "sea": args.sea,
-        "water_y": WATER_Y,
+        "water_y": args.water,
         "heights": stitched,
     }
     os.makedirs(args.out, exist_ok=True)
@@ -256,8 +271,8 @@ def main(argv: list[str] | None = None) -> int:
         from PIL import Image  # type: ignore
 
         with tempfile.TemporaryDirectory(prefix="wdtex_") as tmp:
-            tile_pngs = tile_textures(args.client, TILES, tmp)
-            if len(tile_pngs) == len(TILES):
+            tile_pngs = tile_textures(args.client, tiles, tmp)
+            if len(tile_pngs) == len(tiles):
                 atlas = Image.new("RGB", (len(xs) * TILE_PX,
                                           len(ys) * TILE_PX))
                 for (tx, ty), p in tile_pngs.items():
@@ -265,7 +280,7 @@ def main(argv: list[str] | None = None) -> int:
                                 ((xs.index(tx)) * TILE_PX,
                                  (ys.index(ty)) * TILE_PX))
                 ap_path = os.path.join(args.out,
-                                       "terrain_ironhold_atlas.png")
+                                        f"terrain_{args.name}_atlas.png")
                 atlas.save(ap_path)
                 with open(ap_path, "rb") as f:
                     atlas_png = f.read()
@@ -280,12 +295,12 @@ def main(argv: list[str] | None = None) -> int:
                 print("sin texturas completas: verde plano + sin hierba")
     except ImportError:
         print("sin PIL: verde plano + sin hierba (pip install pillow)")
-    jp = os.path.join(args.out, "terrain_ironhold.json")
+    jp = os.path.join(args.out, f"terrain_{args.name}.json")
     with open(jp, "w", encoding="utf-8") as f:
         json.dump(spec, f)
     if atlas_png is not None:
         spec["atlas_png"] = atlas_png
-    gp = os.path.join(args.out, "terrain_ironhold.glb")
+    gp = os.path.join(args.out, f"terrain_{args.name}.glb")
     with open(gp, "wb") as f:
         f.write(build_glb(spec))
     hs_min = min(stitched)

@@ -6,6 +6,8 @@
     "role": "quest_giver",
     "dialogue_id": "dlg_maren_intro",
     "model": "Mvr_NpcSebrance",
+    "x": 3.0,
+    "z": 0.0,
     "quests_available": ["quest_101", "quest_102", "quest_103", "quest_104", "quest_107", "quest_108", "quest_110"]
   },
   {
@@ -15,6 +17,19 @@
     "role": "merchant",
     "dialogue_id": "dlg_pell_intro",
     "model": "mvr_NpcBato",
+    "x": -4.0,
+    "z": 2.0,
     "quests_available": ["quest_105", "quest_106", "quest_109"]
+  },
+  {
+    "id": "npc_003",
+    "name": "Warden Sella Rook",
+    "zone": "fenmarch",
+    "role": "quest_giver",
+    "dialogue_id": "dlg_sella_intro",
+    "model": "Mvr_NpcRaundas",
+    "x": -3.0,
+    "z": 4.0,
+    "quests_available": ["quest_201", "quest_202", "quest_203", "quest_204", "quest_205"]
   }
 ]

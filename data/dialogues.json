@@ -1,112 +1,169 @@
 [
-  {
-    "id": "dlg_maren_intro",
-    "npc_id": "npc_001",
-    "nodes": [
-      {
-        "node_id": "start",
-        "text": "You must be the new warden. Ironhold holds because ordinary folk refuse to kneel — will you stand with us?",
-        "options": [
-          {
-            "text": "Tell me how I can help.",
-            "next": "quest_offer"
-          },
-          {
-            "text": "What work remains for a warden?",
-            "next": "quest_board"
-          },
-          {
-            "text": "I need a moment to look around.",
-            "next": "farewell"
-          }
-        ]
-      },
-      {
-        "node_id": "quest_offer",
-        "text": "Cinder hares swarm the barley terraces, and boars follow after. Start with the hares — five of them — then we will talk of boars.",
-        "options": [
-          {
-            "text": "I accept. I will cull the hares.",
-            "next": "farewell"
-          },
-          {
-            "text": "That sounds dangerous. Farewell for now.",
-            "next": "farewell"
-          }
-        ]
-      },
-      {
-        "node_id": "quest_board",
-        "text": "The palisade log never empties: wisps in the fen, crows on the racks, wolves on the road. Take what you can handle — the council notes every name.",
-        "options": [
-          {
-            "text": "I will take the next task.",
-            "next": "farewell"
-          },
-          {
-            "text": "Not yet.",
-            "next": "farewell"
-          }
-        ]
-      },
-      {
-        "node_id": "farewell",
-        "text": "The ember keeps you, warden. Come back when the fields breathe easy.",
-        "options": []
-      }
+ {
+  "id": "dlg_maren_intro",
+  "npc_id": "npc_001",
+  "nodes": [
+   {
+    "node_id": "start",
+    "text": "You must be the new warden. Ironhold holds because ordinary folk refuse to kneel — will you stand with us?",
+    "options": [
+     {
+      "text": "Tell me how I can help.",
+      "next": "quest_offer"
+     },
+     {
+      "text": "What work remains for a warden?",
+      "next": "quest_board"
+     },
+     {
+      "text": "I need a moment to look around.",
+      "next": "farewell"
+     }
     ]
-  },
-  {
-    "id": "dlg_pell_intro",
-    "npc_id": "npc_002",
-    "nodes": [
-      {
-        "node_id": "start",
-        "text": "Pell Bryn, scout and scavenger. I buy pelts, fangs and feathers — coin for whatever the wilds throw at you.",
-        "options": [
-          {
-            "text": "What prowls beyond the palisade?",
-            "next": "wilds"
-          },
-          {
-            "text": "Any paid work?",
-            "next": "quest_board"
-          },
-          {
-            "text": "Just passing through.",
-            "next": "farewell"
-          }
-        ]
-      },
-      {
-        "node_id": "wilds",
-        "text": "Hares and crows near the fields, boars and wisps deeper in the fen, and rustjaw wolves where the old road crumbles. Watch the tree line.",
-        "options": [
-          {
-            "text": "Thanks for the warning.",
-            "next": "farewell"
-          }
-        ]
-      },
-      {
-        "node_id": "quest_board",
-        "text": "Always something with teeth, friend. Wolves on the road, boars in the barley, hares everywhere. Coin and tonics for proof — take your pick.",
-        "options": [
-          {
-            "text": "I will take the job.",
-            "next": "farewell"
-          },
-          {
-            "text": "Maybe later.",
-            "next": "farewell"
-          }
-        ]
-      },
-      {
-        "node_id": "farewell",
-        "text": "Coin for pelts, news for friends. Either is welcome.",
-        "options": []
-      }
+   },
+   {
+    "node_id": "quest_offer",
+    "text": "Cinder hares swarm the barley terraces, and boars follow after. Start with the hares — five of them — then we will talk of boars.",
+    "options": [
+     {
+      "text": "I accept. I will cull the hares.",
+      "next": "farewell"
+     },
+     {
+      "text": "That sounds dangerous. Farewell for now.",
+      "next": "farewell"
+     }
     ]
-  }
+   },
+   {
+    "node_id": "quest_board",
+    "text": "The palisade log never empties: wisps in the fen, crows on the racks, wolves on the road. Take what you can handle — the council notes every name.",
+    "options": [
+     {
+      "text": "I will take the next task.",
+      "next": "farewell"
+     },
+     {
+      "text": "Not yet.",
+      "next": "farewell"
+     }
+    ]
+   },
+   {
+    "node_id": "farewell",
+    "text": "The ember keeps you, warden. Come back when the fields breathe easy.",
+    "options": []
+   }
+  ]
+ },
+ {
+  "id": "dlg_pell_intro",
+  "npc_id": "npc_002",
+  "nodes": [
+   {
+    "node_id": "start",
+    "text": "Pell Bryn, scout and scavenger. I buy pelts, fangs and feathers — coin for whatever the wilds throw at you.",
+    "options": [
+     {
+      "text": "What prowls beyond the palisade?",
+      "next": "wilds"
+     },
+     {
+      "text": "Any paid work?",
+      "next": "quest_board"
+     },
+     {
+      "text": "Just passing through.",
+      "next": "farewell"
+     }
+    ]
+   },
+   {
+    "node_id": "wilds",
+    "text": "Hares and crows near the fields, boars and wisps deeper in the fen, and rustjaw wolves where the old road crumbles. Watch the tree line.",
+    "options": [
+     {
+      "text": "Thanks for the warning.",
+      "next": "farewell"
+     }
+    ]
+   },
+   {
+    "node_id": "quest_board",
+    "text": "Always something with teeth, friend. Wolves on the road, boars in the barley, hares everywhere. Coin and tonics for proof — take your pick.",
+    "options": [
+     {
+      "text": "I will take the job.",
+      "next": "farewell"
+     },
+     {
+      "text": "Maybe later.",
+      "next": "farewell"
+     }
+    ]
+   },
+   {
+    "node_id": "farewell",
+    "text": "Coin for pelts, news for friends. Either is welcome.",
+    "options": []
+   }
+  ]
+ },
+ {
+  "id": "dlg_sella_intro",
+  "npc_id": "npc_003",
+  "nodes": [
+   {
+    "node_id": "start",
+    "text": "So Maren still finds wardens worth sending. I am Sella, and this ridge is my charge — hounds below, sparks above. Will you stand the watch with me?",
+    "options": [
+     {
+      "text": "Tell me how I can help.",
+      "next": "quest_offer"
+     },
+     {
+      "text": "What threatens the ridge?",
+      "next": "quest_board"
+     },
+     {
+      "text": "I need a moment to look around.",
+      "next": "farewell"
+     }
+    ]
+   },
+   {
+    "node_id": "quest_offer",
+    "text": "Fen hounds den along the ridge trail and grow bold. Drive off four of them, and we will speak of boars and worse.",
+    "options": [
+     {
+      "text": "I accept. The ridge will be safe.",
+      "next": "farewell"
+     },
+     {
+      "text": "That sounds dangerous. Farewell for now.",
+      "next": "farewell"
+     }
+    ]
+   },
+   {
+    "node_id": "quest_board",
+    "text": "The cairn log never empties: hounds on the trail, boars at the cairns, wisps in the scars, crows on the cords. Take what you can handle.",
+    "options": [
+     {
+      "text": "I will take the next task.",
+      "next": "farewell"
+     },
+     {
+      "text": "Not yet.",
+      "next": "farewell"
+     }
+    ]
+   },
+   {
+    "node_id": "farewell",
+    "text": "The ridge keeps you, warden. Come back with good news.",
+    "options": []
+   }
+  ]
+ }
 ]

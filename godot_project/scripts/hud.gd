@@ -157,6 +157,7 @@ func _process(_delta: float) -> void:
 	_sync_bar(mp_bar, mp_label, p.mp, p.max_mp)
 	_sync_bar(exp_bar, exp_label, p.exp, p.max_exp)
 	_sync_quest()
+	_sync_zone()
 	_sync_skills(p)
 	_sync_target(p)
 	_sync_protect(p)
@@ -177,13 +178,23 @@ func _sync_bar(bar: ProgressBar, label: Label, value: float, max_value: float) -
 	label.text = "%d / %d" % [int(value), int(max_value)]
 
 
+func _sync_zone() -> void:
+	## El título de zona sigue a los viajes y a los saves de otra zona.
+	var game_data := get_node_or_null("/root/GameData")
+	if game_data == null:
+		return
+	var want := str(game_data.get_zone_display_name())
+	if zone_label.text != want:
+		zone_label.text = want
+
+
 func _sync_quest() -> void:
 	var quest_mgr := get_node_or_null("/root/QuestManager")
 	if quest_mgr == null:
 		return
 	var active_id: String = quest_mgr.first_active()
 	if active_id.is_empty():
-		quest_label.text = "Sin misión activa (habla con Maren, E)"
+		quest_label.text = "Sin misión activa (habla con %s, E)" % _zone_guide_name()
 		return
 	var prog: Array = quest_mgr.progress(active_id)
 	var game_data := get_node_or_null("/root/GameData")
@@ -194,6 +205,23 @@ func _sync_quest() -> void:
 		quest_label.text = "%s  %d/%d" % [title, prog[0], prog[1]]
 	else:
 		quest_label.text = title
+
+
+func _zone_guide_name() -> String:
+	## Nombre corto del dador de misiones de la zona para la pista del HUD.
+	var game_data := get_node_or_null("/root/GameData")
+	if game_data == null:
+		return "Maren"
+	var zid := str(game_data.current_zone_id)
+	for nid in game_data.npcs:
+		var nd: Dictionary = game_data.npcs[nid]
+		if str(nd.get("zone", "")) == zid:
+			# "Elder Maren Vell" -> "Maren" (nombre de pila tras el título).
+			var parts: PackedStringArray = str(nd.get("name", "Maren")).split(" ")
+			if parts.size() >= 2:
+				return parts[1]
+			return str(nd.get("name", "Maren"))
+	return "Maren"
 
 
 func _rebuild_inventory() -> void:
