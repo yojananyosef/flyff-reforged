@@ -97,7 +97,10 @@ func _complete(quest_id: String) -> void:
 	var game_data: Node = get_node("/root/GameData")
 	var q: Dictionary = game_data.quests[quest_id]
 	active.erase(quest_id)
-	done.append(quest_id)
+	if bool(q.get("repeatable", false)):
+		print("[Quest] contrato repetible: %s vuelve a estar disponible" % quest_id)
+	else:
+		done.append(quest_id)
 	var player := get_tree().get_first_node_in_group("player")
 	if player != null:
 		player.add_exp(float(q.get("rewards", {}).get("exp", 0)))

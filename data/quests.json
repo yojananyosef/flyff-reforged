@@ -314,5 +314,67 @@
    },
    "unlocks": null,
    "description": "The Fenmarch Alpha Prime dens beyond the scars, scarred and huge. End it and the ridge breathes easy — the wardens will remember this."
+  },
+  {
+   "id": "quest_207",
+   "title": "Stalkers on the Trail",
+   "giver": "npc_003",
+   "requires": "quest_206",
+   "repeatable": true,
+   "target": {
+    "type": "kill",
+    "monster_id": "mon_010",
+    "count": 3
+   },
+   "rewards": {
+    "exp": 180,
+    "items": [
+     "item_003",
+     "item_003"
+    ]
+   },
+   "unlocks": null,
+   "description": "Ridge stalkers keep coming down the trail no matter how many fall. Sella pays bread and coin-worthy thanks for every three."
+  },
+  {
+   "id": "quest_208",
+   "title": "Storm Season",
+   "giver": "npc_003",
+   "requires": "quest_206",
+   "repeatable": true,
+   "target": {
+    "type": "kill",
+    "monster_id": "mon_011",
+    "count": 4
+   },
+   "rewards": {
+    "exp": 220,
+    "items": [
+     "item_004",
+     "item_004"
+    ]
+   },
+   "unlocks": null,
+   "description": "Storm crows gather whenever the wind turns. Scatter four for the beacon crews."
+  },
+  {
+   "id": "quest_209",
+   "title": "Crag Watch",
+   "giver": "npc_003",
+   "requires": "quest_206",
+   "repeatable": true,
+   "target": {
+    "type": "kill",
+    "monster_id": "mon_007",
+    "count": 2
+   },
+   "rewards": {
+    "exp": 260,
+    "items": [
+     "item_004"
+    ]
+   },
+   "unlocks": null,
+   "description": "Crag boars never learn. Two more for the cairns, warden — the watch is endless and so is Sella's gratitude."
   }
 ]

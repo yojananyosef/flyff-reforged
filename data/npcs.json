@@ -30,6 +30,17 @@
     "model": "Mvr_NpcRaundas",
     "x": -3.0,
     "z": 4.0,
-    "quests_available": ["quest_201", "quest_202", "quest_203", "quest_204", "quest_205", "quest_206"]
+    "quests_available": ["quest_201", "quest_202", "quest_203", "quest_204", "quest_205", "quest_206", "quest_207", "quest_208", "quest_209"]
+  },
+  {
+   "id": "npc_004",
+   "name": "Trader Bram Holl",
+   "zone": "fenmarch",
+   "role": "merchant",
+   "dialogue_id": "dlg_bram_intro",
+   "model": "Mvr_NpcSebrance",
+   "x": 5.5,
+   "z": 1.0,
+   "quests_available": []
   }
 ]

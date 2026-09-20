@@ -55,6 +55,19 @@ var _rmb_held := false  # freelook: cámara solo mientras se mantiene RMB
 ## pies zmin -0.24 vs zmax +0.14, nariz zmin -0.14, pelo centrado +0.08
 ## respecto a la cabeza): MODEL_YAW los encara al +Z que usa atan2.
 const MODEL_YAW := PI
+## Equipo visible (gear-visuals): props procedurales por tier, hijos de
+## `_model` para seguir encarado y clips (repliegue: hijos de self).
+## Sin assets nuevos: hoja + guarda para arma, hombreras para armadura.
+const GEAR_BLADES := {
+	"item_001": {"color": Color(0.7, 0.7, 0.75), "len": 0.54},
+	"item_011": {"color": Color(0.45, 0.65, 0.9), "len": 0.69},
+	"item_012": {"color": Color(1.0, 0.45, 0.15), "len": 0.87},
+}
+const GEAR_PAULDRONS := {
+	"item_002": {"color": Color(0.5, 0.5, 0.55), "size": 0.16},
+	"item_013": {"color": Color(0.35, 0.5, 0.7), "size": 0.20},
+	"item_014": {"color": Color(0.8, 0.35, 0.12), "size": 0.24},
+}
 var _model: Node3D = null
 var _anim: AnimationPlayer = null
 var _attacking := false
@@ -93,6 +106,7 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(ring)
 	_move_marker = ring
 	_mount_model()
+	_refresh_gear_visual.call_deferred()
 
 
 func _mount_model() -> void:
@@ -111,6 +125,73 @@ func _mount_model() -> void:
 	body_mesh.visible = false
 	_anim = _find_anim(self)
 	_play_locomotion()
+	_refresh_gear_visual()
+
+
+func _gear_parent() -> Node3D:
+	if is_instance_valid(_model):
+		return _model
+	return self
+
+
+func _gear_mat(color: Color) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.metallic = 0.6
+	mat.roughness = 0.4
+	return mat
+
+
+func _refresh_gear_visual() -> void:
+	## Reconstruye los props del equipo actual (llamar en equip/unequip,
+	## _mount_model y diferido en _ready por si el save restaura después).
+	for parent in [self, _model]:
+		if not is_instance_valid(parent):
+			continue
+		for n in ["GearBlade", "GearPaulL", "GearPaulR"]:
+			var old := (parent as Node).get_node_or_null(n)
+			if old != null:
+				(parent as Node).remove_child(old)
+				old.queue_free()
+	var holder := _gear_parent()
+	if not is_instance_valid(holder):
+		return
+	var w := str(equipment.get("weapon", ""))
+	if GEAR_BLADES.has(w):
+		var spec: Dictionary = GEAR_BLADES[w]
+		var blade := Node3D.new()
+		blade.name = "GearBlade"
+		blade.position = Vector3(0.35, 0.55, 0.1)
+		blade.rotation.z = -0.25
+		var mesh := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(0.09, float(spec.get("len", 0.6)), 0.025)
+		box.material = _gear_mat(spec.get("color", Color.WHITE))
+		mesh.mesh = box
+		mesh.position = Vector3(0.0, float(spec.get("len", 0.6)) * 0.5, 0.0)
+		blade.add_child(mesh)
+		var guard := MeshInstance3D.new()
+		var gbox := BoxMesh.new()
+		gbox.size = Vector3(0.24, 0.05, 0.07)
+		gbox.material = _gear_mat(Color(0.25, 0.2, 0.15))
+		guard.mesh = gbox
+		blade.add_child(guard)
+		blade.set_meta("tier_color", spec.get("color", Color.WHITE))
+		holder.add_child(blade)
+	var a := str(equipment.get("armor", ""))
+	if GEAR_PAULDRONS.has(a):
+		var pspec: Dictionary = GEAR_PAULDRONS[a]
+		var s := float(pspec.get("size", 0.16))
+		for side in [-1.0, 1.0]:
+			var paul := MeshInstance3D.new()
+			paul.name = "GearPaulL" if side < 0.0 else "GearPaulR"
+			var pbox := BoxMesh.new()
+			pbox.size = Vector3(s, 0.1, s)
+			pbox.material = _gear_mat(pspec.get("color", Color.WHITE))
+			paul.mesh = pbox
+			paul.position = Vector3(0.28 * side, 1.35, 0.0)
+			paul.set_meta("tier_color", pspec.get("color", Color.WHITE))
+			holder.add_child(paul)
 
 
 func _find_anim(n: Node) -> AnimationPlayer:
@@ -460,7 +541,10 @@ func add_exp(amount: float) -> void:
 		var known_before := known_skills()
 		level += 1
 		max_exp *= 1.5
+		max_hp += 12.0
+		max_mp += 4.0
 		hp = max_hp
+		mp = max_mp
 		_audio().play_sfx("level_up")
 		print("[Player] nivel %d!" % level)
 		for sk in known_skills():
@@ -555,6 +639,7 @@ func equip(item_id: String) -> bool:
 	inventory_version += 1
 	_audio().play_sfx("ui_click")
 	print("[Equipo] %s en %s" % [item_id, slot])
+	_refresh_gear_visual()
 	return true
 
 
@@ -566,6 +651,7 @@ func unequip(slot: String) -> bool:
 	add_item(current, 1)
 	_audio().play_sfx("ui_click")
 	print("[Equipo] %s desequipado" % current)
+	_refresh_gear_visual()
 	return true
 
 

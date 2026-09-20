@@ -861,7 +861,13 @@ func _run_sim() -> void:
 	_check(player.skill_state("skill_001")[0] == "no_mana", "sin MP estado no_mana")
 	_check(not player.cast_skill("skill_001"), "sin MP no se castea")
 	player.mp = player.max_mp
+	# Subida directa de test: aplica el crecimiento de los niveles saltados.
+	var skipped: int = 3 - player.level
 	player.level = 3
+	player.max_hp += 12.0 * float(skipped)
+	player.max_mp += 4.0 * float(skipped)
+	player.hp = player.max_hp
+	player.mp = player.max_mp
 	_check(player.known_skills().size() == 3, "nivel 3 conoce las 3 skills")
 
 	var hare: Node3D = null
@@ -1344,7 +1350,8 @@ func _run_sim() -> void:
 			quest_mgr.report_kill(str(fq["target"]["monster_id"]))
 		_check(qid in quest_mgr.done, qid + " completada")
 	_check(quest_mgr.done.size() == 16, "16/16 misiones completadas")
-	_check(quest_mgr.available_quests().is_empty(), "sin quests pendientes tras la 206")
+	_check(quest_mgr.available_quests() == ["quest_207", "quest_208", "quest_209"],
+		"solo contratos tras la 206")
 	var boss_def: Dictionary = game_data.monsters["mon_012"]
 	_check(int(boss_def.get("level", 0)) == 8, "boss nivel 8")
 	_check(float(boss_def.get("hp", 0.0)) >= 300.0, "boss con HP de boss")
@@ -1371,6 +1378,51 @@ func _run_sim() -> void:
 	var boss_hit := maxf(1.0, float(boss_def.get("attack", 24.0)) - player.defense_stat())
 	_check(boss_hit <= 15.0, "boss pega <= 15 con Alpha (%.0f)" % boss_hit)
 	_check(player.max_hp / boss_hit >= 6.0, "se sobreviven 6+ golpes del boss")
+	# --- crecimiento por nivel: fondo de HP/MP sin tocar ataque/defensa ---
+	_check(is_equal_approx(player.max_hp, 100.0 + 12.0 * float(player.level - 1)),
+		"max_hp crece +12/nivel (%.0f en %d)" % [player.max_hp, player.level])
+	_check(is_equal_approx(player.max_mp, 50.0 + 4.0 * float(player.level - 1)),
+		"max_mp crece +4/nivel (%.0f)" % player.max_mp)
+	_check(is_equal_approx(player.attack_stat(), 19.0), "ataque sigue 19 con Alpha")
+	# --- equipo visible por tier ---
+	var gear_holder: Node = player.get_node_or_null("Model")
+	if gear_holder == null:
+		gear_holder = player
+	var blade := (gear_holder as Node).get_node_or_null("GearBlade")
+	_check(blade != null, "hoja Alpha visible")
+	if blade != null:
+		_check((blade as Node3D).get_meta("tier_color") == Color(1.0, 0.45, 0.15),
+			"hoja color brasa")
+	_check((gear_holder as Node).get_node_or_null("GearPaulL") != null, "hombrera L visible")
+	_check((gear_holder as Node).get_node_or_null("GearPaulR") != null, "hombrera R visible")
+	_check(player.unequip("weapon"), "desequipar Alpha")
+	_check((gear_holder as Node).get_node_or_null("GearBlade") == null, "hoja oculta al desequipar")
+	_check(player.equip("item_012"), "reequipar Alpha")
+	# --- contratos repetibles de Sella ---
+	_check(quest_mgr.accept_quest("quest_207"), "aceptar contrato 207")
+	for i in 3:
+		quest_mgr.report_kill("mon_010")
+	_check(not ("quest_207" in quest_mgr.done), "repetible no entra en done")
+	_check("quest_207" in quest_mgr.available_quests(), "207 reofertada")
+	_check(quest_mgr.accept_quest("quest_207"), "reaceptar 207")
+	for i in 3:
+		quest_mgr.report_kill("mon_010")
+	_check("quest_207" in quest_mgr.available_quests(), "207 repetible de verdad")
+	_check(quest_mgr.done.size() == 16, "done sigue en 16 tras repetibles")
+	# --- mercader de Fenmarch ---
+	var bram = null
+	for n in get_tree().get_nodes_in_group("npcs"):
+		if n.visible and str(n.get_meta("npc_id")) == "npc_004":
+			bram = n
+	_check(bram != null, "Bram visible en fenmarch")
+	if bram != null:
+		_check((bram as Node3D).get_node_or_null("Model") != null, "Bram con cuerpo")
+		player.global_position = (bram as Node3D).global_position + Vector3(1.0, 0.0, 0.0)
+		_check(nearest_npc() == bram, "E junto a Bram lo elige")
+		dialogue.open("npc_004")
+		_check(dialogue.is_open(), "dialogo de Bram se abre")
+		_check(dialogue.trade_button.visible, "Bram muestra Comerciar")
+		dialogue.close()
 	player.global_position = Vector3(4.0, 0.5, -4.0)
 	_check(nearest_portal(), "portal de fenmarch a tiro")
 	travel_to("ironhold", false)

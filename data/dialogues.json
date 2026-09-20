@@ -165,5 +165,44 @@
     "options": []
    }
   ]
+ },
+ {
+  "id": "dlg_bram_intro",
+  "npc_id": "npc_004",
+  "nodes": [
+   {
+    "node_id": "start",
+    "text": "Bram Holl, trader of the high ridge. I haul Pell's goods up the trail so wardens need not walk down for bread and blades.",
+    "options": [
+     {
+      "text": "Show me your wares.",
+      "next": "farewell"
+     },
+     {
+      "text": "How is business up here?",
+      "next": "trade"
+     },
+     {
+      "text": "Just passing through.",
+      "next": "farewell"
+     }
+    ]
+   },
+   {
+    "node_id": "trade",
+    "text": "Blades for the stalkers, coats for the wind, bread for the belly. Same prices as Pell — the ridge charges no toll.",
+    "options": [
+     {
+      "text": "Let's trade.",
+      "next": "farewell"
+     }
+    ]
+   },
+   {
+    "node_id": "farewell",
+    "text": "Coin for gear, gear for pelts. Either is welcome on the ridge.",
+    "options": []
+   }
+  ]
  }
 ]

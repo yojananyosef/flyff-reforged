@@ -23,7 +23,7 @@
     "original_asset_dir": "WdMadrigal",
     "description": "Wind-scoured highland basin past the dunes, second watch of the Aethermere wardens.",
     "level_range": [4, 8],
-    "npcs": ["npc_003"],
+    "npcs": ["npc_003", "npc_004"],
     "monsters": ["mon_006", "mon_007", "mon_008", "mon_009", "mon_010", "mon_011", "mon_012"],
     "spawn_point": [0, 1, 0],
     "props": [
